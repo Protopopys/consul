@@ -1,0 +1,58 @@
+---
+# Создаем папки на удаленной машине
+- name: CONSUL | Creating conf directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: "0755"
+  loop:
+    - "{{ consul.data_dir }}"
+    - "{{ consul.conf_dir }}"
+
+# Создаем конфигурационный файл сервиса
+- name: CONSUL | Creating configuration file
+  template:
+    src: "config.json.j2"
+    dest: "{{ consul.conf_dir }}/config.json"
+    owner: "{{ consul.user }}"
+    group: "{{ consul.group }}"
+    mode: '0644'
+  notify: CONSUL | Restart consul
+  tags:
+    - config_file
+    - configs
+
+# Создаем конфигурационный файл systemd
+- name: CONSUL | Creating systemd config file
+  template:
+    src: "systemd.service.j2"
+    dest: "/etc/systemd/system/consul.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - CONSUL | Reload systemd
+    - CONSUL | Restart consul
+  tags:
+    - systemd_config_file
+    - configs
+
+# Запускаем принудительное исполнение handlers    
+- name: CONSUL | Flush handlers
+  meta: flush_handlers
+
+# Убеждаемся что сервис запущен и добавлен в автозапуск
+- name: CONSUL | Ensure consul is started and enabled a boot
+  service:
+    name: consul
+    state: "{{ consul.state }}"
+    enabled: "{{ consul.enabled }}"
+
+# Создаем symlink для бинарного файлы consul
+- name: CONSUL | Create symlink for consul executable
+  file:
+    src: "{{ consul_destination_path }}/consul"
+    dest: /usr/bin/consul
+    state: link

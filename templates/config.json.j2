@@ -1,0 +1,33 @@
+{
+    "bind_addr": "{{ consul.bind_addr }}",
+    "node_name": "{{ consul.node_name }}",
+    "server": {% if consul_node_role == 'master' %}true{% else %}false{%endif%},
+{% if consul_node_role == 'master' %}
+    "bootstrap_expect": {{ consul.bootstrap_expect }},
+    "client_addr": "{{ consul.client_address }}",
+    "enable_script_checks": {{ consul.enable_script_checks | bool | lower }},
+    "dns_config": {
+        "enable_truncate": true,
+        "only_passing": true
+    },
+    "domain": "{{ consul.domain }}",
+    "rejoin_after_leave": {{ consul.rejoin_after_leave | bool | lower  }},
+    "ui": {{ consul.ui | bool | lower  }},
+{% endif %}
+{% if consul.cors_allowed | bool | lower | default(false) %}
+    "http_config": {
+        "response_headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "{{ consul.cors_allow_methods }}"
+        }
+    },
+{% endif %}
+    "datacenter": "{{ consul.datacenter }}",
+    "data_dir": "{{ consul.data_dir }}",
+    "enable_syslog": {{ consul.enable_syslog | bool | lower  }},
+    "encrypt": "{{ consul.encrypt }}",
+    "leave_on_terminate": {{ consul.leave_on_terminate | bool | lower  }},
+    "log_level": "{{ consul.log_level }}",
+    "disable_update_check": {{ consul.disable_update_check | bool | lower  }},
+    "retry_join": [ {% for item in consul.retry_join %}"{{ item }}"{% if not loop.last %}, {% endif %}{% endfor %} ]
+}

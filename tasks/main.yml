@@ -1,0 +1,15 @@
+---
+- name: CONSUL | Import bootstrap os task
+  import_tasks: "bootstrap_system.yml"
+  tags:
+    - bootstrap
+
+- name: CONSUL | Import Consul installation task
+  import_tasks: "install_consul.yml"
+  tags:
+    - install
+
+- name: CONSUL | Import Consul configuration task
+  import_tasks: "configure_consul.yml"
+  tags:
+    - configure

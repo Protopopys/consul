@@ -1,0 +1,262 @@
+---
+# Вкл/Выкл использование downloader сервера (актуально если на удаленном хосте нет доступа к сети интернет или же количество хостов на которые необходимо доставить архив больше 1го)
+use_downloader: true
+# При использовании downloader в данную папку будет осуществлятся скачивание архива, в дальнейшем распространение архива на удаленные хосты осуществляется из данной папки downloader сервера.
+downloader_source_folder: ~/DISTR
+# Папка в которую будет осуществлена загрузка установочного архива
+distribution_path: "/opt/DISTR"
+
+### Consul versions ###
+# Устанавливаемая версия Consul
+consul_version: v1.6.2
+# Distributives
+consul:
+  v1.6.2:
+    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
+    source_url: https://releases.hashicorp.com/consul/1.6.2/consul_1.6.2_linux_amd64.zip
+    # Контрольная сумма скачаемого архива
+    checksum_algorithm: "sha256"
+    checksum: 78d127e5b8edd310c3f9f89487fb833a5c7bcb4e09cb731a4d39100fc53b38be
+    binary_checksum: 2122f0df22ba48bf5a4c6dbacef76826cbdd5fbe46bf1d626618fde78eb6297c
+    extra_opts: ''
+
+### System user and group
+# Параметры создания пользователя
+consul_manage_user: false
+consul_manage_group: false
+consul_user: root
+consul_group: root
+consul_system: true
+consul_shell: /bin/false
+consul_ssh_key: false
+
+# Конфигурационные параметры сервиса
+## Параметры запуска сервиса
+consul_state: started
+consul_enabled: true
+
+## Consul client role
+consul_node_role: both
+#consul_node_role: server
+#consul_node_role: client
+
+### Servers
+consul_group_name: "consul"
+
+consul_servers: "\
+  {% set _consul_master_nodes = [] %}\
+  {% for host in groups[consul_group_name] %}\
+    {% set _consul_node_role = hostvars[host]['consul_node_role'] | default('client') %}\
+    {% if ( _consul_node_role == 'server' or _consul_node_role == 'both') %}\
+      {{ _consul_master_nodes.append(hostvars[host].advertise_ip | default(hostvars[host].ansible_default_ipv4.address)) }}\
+    {% endif %}\
+  {% endfor %}\
+  {{ _consul_master_nodes }}"
+
+### General Parameters
+
+## Directories ##
+# A directory of configuration files to load.
+# Consul will load all files in this directory with the suffix ".json" or ".hcl".
+# The load order is alphabetical, and the the same merge routine is used as with the config-file option above.
+# This option can be specified multiple times to load multiple directories.
+# Sub-directories of the config directory are not loaded.
+# For more information on the format of the configuration files, see the Configuration Files section.
+consul_conf_dir: "/etc/consul.d/{{ consul_node_role }}"
+# This is required for all agents.
+# The directory should be durable across reboots.
+# This is especially critical for agents that are running in server mode as they must be able to persist cluster state.
+# Additionally, the directory must support the use of filesystem locking, meaning some types of mounted folders (e.g. VirtualBox shared folders) may not be suitable.
+consul_data_dir: "/DATA/consul"
+# Specifies a local directory used to store agent binary file.
+# This must be specified as an absolute path.
+consul_bin_dir: "/opt/consul/{{ consul_version }}"
+
+
+#TODO auto_config, auto_encrypt, connect, config_entries
+
+## ACLs ##
+# Enables ACLs.
+consul_acl_enabled: false 
+
+# Used to control Time-To-Live caching of ACL policies.
+# By default, this is 30 seconds.
+# This setting has a major performance impact: reducing it will cause more frequent refreshes while increasing it reduces the number of refreshes.
+# However, because the caches are not actively invalidated, ACL policy may be stale up to the TTL value.
+consul_acl_policy_ttl: "30s"
+
+# Used to control Time-To-Live caching of ACL roles.
+# By default, this is 30 seconds.
+# This setting has a major performance impact: reducing it will cause more frequent refreshes while increasing it reduces the number of refreshes.
+# However, because the caches are not actively invalidated, ACL role may be stale up to the TTL value.
+consul_acl_role_ttl: "30s"
+
+# Used to control Time-To-Live caching of ACL tokens.
+# By default, this is 30 seconds.
+# This setting has a major performance impact: reducing it will cause more frequent refreshes while increasing it reduces the number of refreshes.
+# However, because the caches are not actively invalidated, ACL token may be stale up to the TTL value.
+consul_acl_token_ttl: "30s"
+
+# Either "allow", "deny", "extend-cache" or "async-cache"; "extend-cache" is the default.
+# In the case that a policy or token cannot be read from the primary_datacenter or leader node, the down policy is applied.
+# In "allow" mode, all actions are permitted, "deny" restricts all operations, and "extend-cache" allows any cached objects to be used, ignoring their TTL values.
+# If a non-cached ACL is used, "extend-cache" acts like "deny". The value "async-cache" acts the same way as "extend-cache" but performs updates asynchronously when ACL is present but its TTL is expired, thus, if latency is bad between the primary and secondary datacenters, latency of operations is not impacted.
+consul_acl_down_policy: "extend-cache"
+
+# Either "allow" or "deny"; defaults to "allow" but this will be changed in a future major release.
+# The default policy controls the behavior of a token when there is no matching rule.
+# In "allow" mode, ACLs are a denylist: any operation not specifically prohibited is allowed.
+# In "deny" mode, ACLs are an allowlist: any operation not specifically allowed is blocked.
+# Note: this will not take effect until you've enabled ACLs.
+consul_acl_default_policy: "allow"
+
+# Either "enabled" or "disabled", defaults to "disabled".
+# When enabled, the list permission will be required on the prefix being recursively read from the KV store.
+# Regardless of being enabled, the full set of KV entries under the prefix will be filtered to remove any entries that the request's ACL token does not grant at least read permissions.
+# This option is only available in Consul 1.0 and newer.
+consul_acl_enable_key_list_policy: "disabled"
+
+# By default secondary Consul datacenters will perform replication of only ACL policies and roles.
+# Setting this configuration will will enable ACL token replication and allow for the creation of both local tokens and auth methods in connected secondary datacenters.
+# Warning: When enabling ACL token replication on the secondary datacenter, global tokens already present in the secondary datacenter will be lost.
+# For production environments, consider configuring ACL replication in your initial datacenter bootstrapping process.
+consul_acl_enable_token_replication: false
+
+# Either true or false. When true tokens set using the API will be persisted to disk and reloaded when an agent restarts.
+consul_acl_enable_token_persistence: true
+
+## ACLs Tokens ##
+# Only used for servers in the primary_datacenter.
+# This token will be created with management-level permissions if it does not exist.
+# It allows operators to bootstrap the ACL system with a token Secret ID that is well-known.
+# The master token is only installed when a server acquires cluster leadership.
+# If you would like to install or change the acl_master_token, set the new value for master in the configuration for all servers.
+# Once this is done, restart the current leader to force a leader election.
+# If the master token is not supplied, then the servers do not create a master token.
+# When you provide a value, it should be a UUID.
+# To maintain backwards compatibility and an upgrade path this restriction is not currently enforced but will be in a future major Consul release.
+consul_acl_tokens_master: ""
+
+# When provided, the agent will use this token when making requests to the Consul servers.
+# Clients can override this token on a per-request basis by providing the "?token" query parameter.
+# When not provided, the empty token, which maps to the 'anonymous' ACL token, is used.
+consul_acl_tokens_default: ""
+
+# Used for clients and servers to perform internal operations.
+# If this isn't specified, then the default will be used.
+# This token must at least have write access to the node name it will register as in order to set any of the node-level information in the catalog such as metadata, or the node's tagged addresses.
+consul_acl_tokens_agent: ""
+
+# Used to access agent endpoints that require agent read or write privileges, or node read privileges, even if Consul servers aren't present to validate any tokens.
+# This should only be used by operators during outages, regular ACL tokens should normally be used by applications.
+consul_acl_tokens_agent_master: ""
+
+# The ACL token used to authorize secondary datacenters with the primary datacenter for replication operations.
+# This token is required for servers outside the primary_datacenter when ACLs are enabled.
+# This token may be provided later using the agent token API on each server.
+# This token must have at least "read" permissions on ACL data but if ACL token replication is enabled then it must have "write" permissions.
+# This also enables Connect replication, for which the token will require both operator "write" and intention "read" permissions for replicating CA and Intention data.
+# Warning: When enabling ACL token replication on the secondary datacenter, policies and roles already present in the secondary datacenter will be lost. For production environments, consider configuring ACL replication in your initial datacenter bootstrapping process.
+consul_acl_tokens_replication: ""
+
+## Autopilot ##
+# Added in Consul 0.8, this object allows a number of sub-keys to be set which can configure operator-friendly settings for Consul servers.
+# When these keys are provided as configuration, they will only be respected on bootstrapping.
+# If they are not provided, the defaults will be used. In order to change the value of these options after bootstrapping, you will need to use the Consul Operator Autopilot command.
+# For more information about Autopilot, review the Autopilot tutorial.
+
+# This controls the automatic removal of dead server nodes periodically and whenever a new server is added to the cluster. Defaults to true.
+consul_autopilot_cleanup_dead_servers: true
+
+# Controls the maximum amount of time a server can go without contact from the leader before being considered unhealthy.
+# Must be a duration value such as 10s. Defaults to 200ms
+consul_autopilot_last_contact_threshold: "200mc"
+
+# Controls the maximum number of log entries that a server can trail the leader by before being considered unhealthy.
+# Defaults to 250
+consul_autopilot_max_trailing_logs: 250
+
+# Sets the minimum number of servers necessary in a cluster before autopilot can prune dead servers.
+# There is no default.
+consul_autopilot_min_quorum: ""
+
+# Controls the minimum amount of time a server must be stable in the 'healthy' state before being added to the cluster.
+# Only takes effect if all servers are running Raft protocol version 3 or higher.
+# Must be a duration value such as 30s. Defaults to 10s.
+consul_autopilot_server_stabilization_time: "10s"
+
+## Addresses ##
+# The address that should be bound to for internal cluster communications.
+# This is an IP address that should be reachable by all other nodes in the cluster.
+# By default, this is "0.0.0.0", meaning Consul will bind to all addresses on the local machine and will advertise the private IPv4 address to the rest of the cluster.
+# If there are multiple private IPv4 addresses available, Consul will exit with an error at startup.
+# If you specify "[::]", Consul will advertise the public IPv6 address.
+# If there are multiple public IPv6 addresses available, Consul will exit with an error at startup.
+# Consul uses both TCP and UDP and the same port for both.
+# If you have any firewalls, be sure to allow both protocols.
+consul_bind_addr:  "0.0.0.0"
+# The address to which Consul will bind client interfaces, including the HTTP and DNS servers.
+# By default, this is "127.0.0.1", allowing only loopback connections.
+# In Consul 1.0 and later this can be set to a space-separated list of addresses to bind to, or a go-sockaddr template that can potentially resolve to multiple addresses.
+consul_client_addr: "127.0.0.1"
+
+## Server only ##
+consul_server_enabled: "{{ (consul_node_role == 'server') or (consul_node_role == 'both') }}"
+# This flag provides the number of expected servers in the datacenter.
+# Either this value should not be provided or the value must agree with other servers in the cluster.
+# When provided, Consul waits until the specified number of servers are available and then bootstraps the cluster.
+# This allows an initial leader to be elected automatically. 
+consul_bootstrap_expect: "{{ consul_servers | count or 3 }}"
+
+# This interval controls how often check output from checks in a steady state is synchronized with the server.
+# By default, this is set to 5 minutes ("5m").
+# Many checks which are in a steady state produce slightly different output per run (timestamps, etc) which cause constant writes.
+# This configuration allows deferring the sync of check output for a given interval to reduce write pressure.
+# If a check ever changes state, the new state and associated output is synchronized immediately.
+# To disable this behavior, set the value to "0s".
+consul_check_update_interval: "5m"
+
+# This flag controls the datacenter in which the agent is running.
+# If not provided, it defaults to "dc1". Consul has first-class support for multiple datacenters, but it relies on proper configuration.
+# Nodes in the same datacenter should be on a single LAN.
+consul_datacenter: "dc1"
+
+## Cache ##
+# The size of the token bucket used to recharge the rate-limit per cache entry.
+# The default value is 2 and means that when cache has not been updated for a long time, 2 successive queries can be made as long as the rate-limit is not reached.
+consul_cache_entry_fetch_max_burst: 2
+
+# Configures the rate-limit at which the cache may refresh a single entry.
+# On a cluster with many changes/s, watching changes in the cache might put high pressure on the servers.
+# This ensures the number of requests for a single cache entry will never go beyond this limit, even when a given service changes every 1/100s.
+# Since this is a per cache entry limit, having a highly unstable service will only rate limit the watched on this service, but not the other services/entries.
+# The value is strictly positive, expressed in queries per second as a float, 1 means 1 query per second, 0.1 mean 1 request every 10s maximum.
+# The default value is "No limit" and should be tuned on large clusters to avoid performing too many RPCs on entries changing a lot.
+consul_cache_entry_fetch_rate: "No limit"
+
+
+# Для мастера
+## Количество мастеров в кластере для возможности запустить автоматический выбор лидера
+bootstrap_expect: 1
+client_address: 0.0.0.0
+ui: true
+ui_context_path: /ui
+# Общие
+bind_addr: 127.0.0.1
+node_name: "{{ inventory_hostname }}"
+datacenter: dc01
+domain: consul
+enable_script_checks: true
+enable_syslog: true
+encrypt: goplCZgdmOFMZ2Q43To0jw==
+leave_on_terminate: true
+log_level: INFO
+disable_update_check: false
+rejoin_after_leave: true
+# Адреса мастеров для возможности присоединиться к кластеру
+retry_join: 
+  - 127.0.0.1
+cors_allowed: true
+cors_allow_methods: 'POST, GET, OPTIONS, DELETE, PUT'
+# Список версий с параметрами (контрольная сумма архива, пряма ссылка в сети интернет, параметр распаковки архива)
+

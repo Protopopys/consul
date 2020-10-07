@@ -1,0 +1,92 @@
+datacenter = "{{ consul_datacenter }}"
+
+bind_addr = "{{ consul_bind_addr }}"
+client_addr = "{{ consul_client_addr }}"
+
+
+data_dir = "{{ consul_data_dir }}"
+
+## ACLs ##
+acl {
+    enabled = {{ consul_acl_enabled | bool | lower }}
+    policy_ttl = "{{ consul_acl_policy_ttl }}"
+    role_ttl = "{{ consul_acl_role_ttl }}"
+    token_ttl = "{{ consul_acl_token_ttl }}"
+    down_policy = "{{ consul_acl_down_policy }}"
+    default_policy = "{{ consul_acl_default_policy }}"
+    enable_key_list_policy = "{{ consul_acl_enable_key_list_policy }}"
+    enable_token_replication = {{ consul_acl_enable_token_replication | bool | lower }}
+    enable_token_persistence = {{ consul_acl_enable_token_persistence | bool | lower }}
+    tokens {
+{% if consul_acl_tokens_master is defined and consul_acl_tokens_master | length > 0 %}
+        master = "{{ consul_acl_tokens_master }}"
+{% endif %}
+{% if consul_acl_tokens_default is defined and consul_acl_tokens_default | length > 0 %}
+        default = "{{ consul_acl_tokens_default }}"
+{% endif %}
+{% if consul_acl_tokens_agent is defined and consul_acl_tokens_agent | length > 0 %}
+        agent = "{{ consul_acl_tokens_agent }}"
+{% endif %}
+{% if consul_acl_tokens_agent_master is defined and consul_acl_tokens_agent_master | length > 0 %}
+        agent_master = "{{ consul_acl_tokens_agent_master }}"
+{% endif %}
+{% if consul_acl_tokens_replication is defined and consul_acl_tokens_replication | length > 0 %}
+        replication = "{{ consul_acl_tokens_replication }}"
+{% endif %}
+    }
+}
+
+## Autopilot ##
+autopilot {
+    cleanup_dead_servers = {{ consul_autopilot_cleanup_dead_servers | bool |lower }}
+    last_contact_threshold = "{{ consul_autopilot_last_contact_threshold }}"
+    max_trailing_logs = "{{ consul_autopilot_max_trailing_logs }}"
+{% if consul_autopilot_min_quorum is defined and consul_autopilot_min_quorum | length > 0 %}
+    min_quorum = "{{ consul_autopilot_min_quorum }}"
+{% endif %}
+    server_stabilization_time = "{{ consul_autopilot_server_stabilization_time }}"
+}
+
+## Cache ##
+cache {
+    entry_fetch_max_burst = {{ consul_cache_entry_fetch_max_burst }}
+    entry_fetch_rate = "{{ consul_cache_entry_fetch_rate }}"
+}
+
+check_update_interval = "{{ consul_check_update_interval }}"
+
+
+
+{
+    "bind_addr": "{{ consul.bind_addr }}",
+    "node_name": "{{ consul.node_name }}",
+    "server": {% if consul_node_role == 'master' %}true{% else %}false{%endif%},
+{% if consul_node_role == 'master' %}
+    "bootstrap_expect": {{ consul.bootstrap_expect }},
+    "client_addr": "{{ consul.client_address }}",
+    "enable_script_checks": {{ consul.enable_script_checks | bool | lower }},
+    "dns_config": {
+        "enable_truncate": true,
+        "only_passing": true
+    },
+    "domain": "{{ consul.domain }}",
+    "rejoin_after_leave": {{ consul.rejoin_after_leave | bool | lower  }},
+    "ui": {{ consul.ui | bool | lower  }},
+{% endif %}
+{% if consul.cors_allowed | bool | lower | default(false) %}
+    "http_config": {
+        "response_headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "{{ consul.cors_allow_methods }}"
+        }
+    },
+{% endif %}
+    "datacenter": "{{ consul.datacenter }}",
+    "data_dir": "{{ consul.data_dir }}",
+    "enable_syslog": {{ consul.enable_syslog | bool | lower  }},
+    "encrypt": "{{ consul.encrypt }}",
+    "leave_on_terminate": {{ consul.leave_on_terminate | bool | lower  }},
+    "log_level": "{{ consul.log_level }}",
+    "disable_update_check": {{ consul.disable_update_check | bool | lower  }},
+    "retry_join": [ {% for item in consul.retry_join %}"{{ item }}"{% if not loop.last %}, {% endif %}{% endfor %} ]
+}

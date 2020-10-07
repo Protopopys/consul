@@ -1,0 +1,132 @@
+---
+# Проверяем наличие бинарного файла на удаленной машине
+- name: CONSUL | Check that the consul binary exists on the destination host
+  stat:
+    path: "{{ consul_bin_dir }}/consul"
+    checksum_algorithm: "{{ consul[consul_version].checksum_algorithm }}"
+  register: consul_bin
+
+# Создаем переменную install_consul=true
+# Если:
+## Бинарные файлы отсутствуют или
+## Контрольная сумма бинарных файлов не соответствует требуемой
+- name: CONSUL | Set 'install_consul' to true
+  set_fact:
+    install_consul: true
+  when: consul_bin.stat.checksum|default() != consul[consul_version].binary_checksum
+
+- name: CONSUL |(when install_consul == TRUE)
+  block:
+    # Создаем папки на удаленной машине
+    - name: CONSUL | Creating folders
+      file:
+        path: "{{ distribution_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: u+rwx
+
+    # Создаем папки на удаленной машине
+    - name: CONSUL | Creating folders
+      file:
+        path: "{{ consul_bin_dir }}"
+        state: directory
+        owner: "{{ consul_user }}"
+        group: "{{ consul_group }}"
+        mode: u+rwx
+
+    # Проверяем наличие архива на удаленной машине
+    - name: CONSUL | Check that the consul archive exists on the destination host
+      stat:
+        path: "{{ distribution_path }}/{{ consul[consul_version].source_url | basename }}"
+        checksum_algorithm: "{{ consul[consul_version].checksum_algorithm }}"
+      register: consul_archive
+  when: install_consul|default(false)
+
+# Блок заданий
+# исполняется если:
+## Использвание downloader сервера включено - use_downloader=true и (Если архива нет на удаленном сервере или Контрольная сумма архива не совпадает с указанной в переменной - consul[consul_version].checksum
+- name: CONSUL |(when use_downloader == TRUE)
+  block:
+    # Создаем папку на downloader сервере (в данную папку будет осуществляться скачивание архива из сети интернет)
+    - name: CONSUL | Creating default folder for components
+      file:
+        path: "{{ downloader_source_folder }}"
+        state: directory
+        mode: u+rwx
+      run_once: true
+      delegate_to: localhost
+
+    # Проверяем наличие архива на downloader сервере
+    - name: CONSUL | Check that the consul archive exists on the localhost
+      stat:
+        path: "{{ downloader_source_folder }}/{{ consul[consul_version].source_url | basename }}"
+        checksum_algorithm: "{{ consul[consul_version].checksum_algorithm }}"
+      register: downloader_distr
+      run_once: true
+      delegate_to: localhost
+
+    # Выкачиваем архив напрямую из сети интернет
+    # Если:
+    ## Контрольная сумма архива на downloader не совпадает с указанной в переменной - consul[consul_version].checksum)
+    - name: CONSUL | Download consul archive to localhost
+      get_url:
+        url: "{{ consul[consul_version].source_url }}"
+        dest: "{{ downloader_source_folder }}"
+        checksum: "{{ consul[consul_version].checksum_algorithm }}:{{ consul[consul_version].checksum }}"
+      run_once: true
+      delegate_to: localhost
+      when: downloader_distr.stat.checksum|default() != consul[consul_version].checksum
+
+    # Выполняем синхронизацию архива с удаленной машиной
+    # Если:
+    ## downloader сервером является localhost (машина на которой осуществляется запуск playbook)
+    ## Контрольная сумма архива на удаленном сервере не совпадает с указанной в переменной - consul[consul_version].checksum)
+    - name: CONSUL | Copy from localhost to remote host
+      copy:
+        src: "{{ downloader_source_folder }}/{{ consul[consul_version].source_url | basename }}"
+        dest: "{{ distribution_path }}"
+        owner: root
+        group: root
+        mode: u+rwx
+  when:
+    - install_consul|default(false)
+    - use_downloader
+    - consul_archive.stat.checksum|default() != consul[consul_version].checksum
+
+# Выкачиваем архив напрямую из сети интернет
+# Если:
+## Использвание downloader сервера отключено: use_downloader=false и (Если архива нет на удаленном сервере или Контрольная сумма архива не совпадает с указанной в переменной - consul[consul_version].checksum)
+- name: CONSUL | Download consul archive to host
+  get_url:
+    url: "{{ consul[consul_version].source_url }}"
+    dest: "{{ distribution_path }}"
+    checksum: "{{ consul[consul_version].checksum_algorithm }}:{{ consul[consul_version].checksum }}"
+    owner: root
+    group: root
+  when:
+    - install_consul|default(false)
+    - not use_downloader
+    - consul_archive.stat.checksum|default() != consul[consul_version].checksum
+
+# Останавливаем сервис
+- name: CONSUL | Ensure service is stopped
+  systemd:
+    name: consul
+    state: stopped
+  when:
+    - install_consul|default(false)
+    - "'consul.service' in services"
+
+# Распаковываем архив на удаленном сервере в директорию "{{ consul_bin_dir }}"
+# Если:
+## Контрольная сумма бинарного файла на удаленном хосте не совпадает с указанной в переменной - consul[consul_version].binary_checksum)
+- name: CONSUL | Extract consul archive into {{ distribution_path }}
+  unarchive:
+    src: "{{ distribution_path }}/{{ consul[consul_version].source_url | basename }}"
+    dest: "{{ consul_bin_dir }}"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: '1755'
+    remote_src: true
+  when: consul_bin.stat.checksum|default() != consul[consul_version].binary_checksum
