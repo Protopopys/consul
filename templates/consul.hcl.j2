@@ -78,7 +78,17 @@ encrypt_verify_incoming = {{ consul_encrypt_verify_incoming | bool | lower }}
 encrypt_verify_outgoing = {{ consul_encrypt_verify_outgoing | bool | lower }}
 disable_keyring_file = {{ consul_disable_keyring_file | bool | lower }}
 leave_on_terminate = {{ consul_leave_on_terminate | bool | lower }}
-
+default_query_time = "{{ consul_default_query_time }}"
+max_query_time = "{{ consul_max_query_time }}"
+{% if consul_node_id is defined and consul_node_id | length > 0 and not consul_disable_host_node_id %}
+node_id = "{{ consul_node_id }}"
+{% endif %}
+node_name = "{{ consul_node_name }}"
+node_meta {
+{% for key, value in consul_node_meta.items() %}
+    "{{ key }}" = "{{ value }}"
+{% endfor %}    
+}
 
 ## Updates ##
 disable_anonymous_signature = {{ consul_disable_anonymous_signature | bool | lower }}
@@ -110,6 +120,13 @@ dns_config {
 ## Loging and debug ##
 enable_debug = {{ consul_enable_debug | bool | lower }}
 enable_syslog = {{ consul_enable_syslog | bool | lower }}
+log_file = "{{ consul_log_file }}"
+log_rotate_duration = "{{ consul_log_rotate_duration }}"
+log_rotate_bytes = "{{ consul_log_rotate_bytes }}"
+log_rotate_max_files = "{{ consul_log_rotate_max_files }}"
+log_level = "{{ consul_log_level }}"
+log_json = {{ consul_log_json | bool | lower }}
+
 
 ## HTTP config ##
 http_config {

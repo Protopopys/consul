@@ -260,7 +260,17 @@ consul_disable_anonymous_signature: false
 # This is disabled in Consul Enterprise.
 consul_disable_update_check: false
 
-
+# The name of this node in the cluster.
+# This must be unique within the cluster.
+# By default this is the hostname of the machine.
+consul_node_name: "{{ ansible_hostname }}"
+# Available in Consul 0.7.3 and later, this is a unique identifier for this node across all time, even if the name of the node or address changes.
+# This must be in the form of a hex string, 36 characters long, such as adf4238a-882b-9ddc-4a9d-5b6758e4159e.
+# If this isn't supplied, which is the most common case, then the agent will generate an identifier at startup and persist it in the data directory so that it will remain the same across agent restarts.
+# Information from the host will be used to generate a deterministic node ID if possible, unless -disable-host-node-id is set to true.
+consul_node_id: ""
+# Available in Consul 0.7.3 and later, This object allows associating arbitrary metadata key/value pairs with the local node, which can then be used for filtering results from certain catalog endpoints.
+consul_node_meta: {}
 # Setting this to true will prevent Consul from using information from the host to generate a deterministic node ID, and will instead generate a random node ID which will be persisted in the data directory.
 # This is useful when running multiple Consul agents on the same host for testing.
 # This defaults to false in Consul prior to version 0.8.5 and in 0.8.5 and later defaults to true, so you must opt-in for host-based IDs.
@@ -361,6 +371,7 @@ consul_enable_agent_tls_for_checks: false
 # Script checks defined in HTTP API registrations will still not be allowed.
 consul_enable_local_script_checks: false
 
+
 ## Loging and debug ##
 # When set, enables some additional debugging features.
 # Currently, this is only used to access runtime profiling HTTP endpoints, which are available with an operator:read ACL regardless of the value of enable_debug.
@@ -368,8 +379,30 @@ consul_enable_debug: false
 # This flag enables logging to syslog.
 # This is only supported on Linux and OSX. It will result in an error if provided on Windows.
 consul_enable_syslog: false
-
-
+# Writes all the Consul agent log messages to a file.
+# This value is used as a prefix for the log file name.
+# The current timestamp is appended to the file name.
+# If the value ends in a path separator, consul- will be appened to the value. If the file name is missing an extension, .log is appended.
+# For example, setting log-file to /var/log/ would result in a log file path of /var/log/consul-{timestamp}.log. log-file can be combined with -log-rotate-bytes and -log-rotate-duration for a fine-grained log rotation experience.
+consul_log_file: "/var/log/consul-{timestamp}.log"
+# To specify the maximum duration a log should be written to before it needs to be rotated.
+# Must be a duration value such as 30s. Defaults to 24h.
+consul_log_rotate_duration: "24h"
+# To specify the number of bytes that should be written to a log before it needs to be rotated.
+# Unless specified, there is no limit to the number of bytes that can be written to a log file.
+# Set to 20971520 = 20Mb
+consul_log_rotate_bytes: "20971520"
+# To specify the maximum number of older log file archives to keep.
+# Defaults to 0 (no files are ever deleted).
+# Set to -1 to discard old log files when a new one is created.
+consul_log_rotate_max_files: "5"
+# The level of logging to show after the Consul agent has started. This defaults to "info".
+# The available log levels are "trace", "debug", "info", "warn", and "err".
+# You can always connect to an agent via consul monitor and use any log level.
+# Also, the log level can be changed during a config reload.
+consul_log_level: "warn"
+# This flag enables the agent to output logs in a JSON format. By default this is false.
+consul_log_json: false
 
 
 # Specifies the secret key to use for encryption of Consul network traffic.
@@ -388,6 +421,20 @@ consul_encrypt_verify_outgoing: true
 # Any installed keys will be lost on shutdown, and only the given -encrypt key will be available on startup.
 # This defaults to false.
 consul_disable_keyring_file: false
+# This flag controls the amount of time a blocking query will wait before Consul will force a response.
+# This value can be overridden by the wait query parameter.
+# Note that Consul applies some jitter on top of this time.
+# Defaults to 300s.
+consul_default_query_time: "300s"
+# This flag controls the maximum amount of time a blocking query can wait before Consul will force a response.
+# Consul applies jitter to the wait time.
+# The jittered time will be capped to this time.
+# Defaults to 600s.
+consul_max_query_time: "600s"
+
+
+
+
 
 
 ## HTTP config ##
@@ -471,7 +518,7 @@ consul_limits_kv_max_value_size: "512KB"
 # Note that tuning these improperly can cause Consul to fail in unexpected ways, it may potentially affect leadership stability and prevent timely heartbeat signals by increasing RPC IO duration.
 consul_limits_txn_max_req_len: "512KB"
 
-#TODO - https://www.consul.io/docs/agent/options.html#log_file
+# TODO https://www.consul.io/docs/agent/options.html#performance
 
 
 
