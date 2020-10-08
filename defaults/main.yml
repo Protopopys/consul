@@ -73,7 +73,7 @@ consul_data_dir: "/DATA/consul"
 consul_bin_dir: "/opt/consul/{{ consul_version }}"
 
 
-#TODO auto_config, auto_encrypt, connect, config_entries
+#TODO auto_config, auto_encrypt, connect - https://www.consul.io/docs/agent/options.html#connect, config_entries - https://www.consul.io/docs/agent/options.html#config_entries / gossip_lan - https://www.consul.io/docs/agent/options.html#gossip_lan / gossip_wan - https://www.consul.io/docs/agent/options.html#gossip_wan
 
 ## ACLs ##
 # Enables ACLs.
@@ -233,6 +233,271 @@ consul_cache_entry_fetch_max_burst: 2
 # The value is strictly positive, expressed in queries per second as a float, 1 means 1 query per second, 0.1 mean 1 request every 10s maximum.
 # The default value is "No limit" and should be tuned on large clusters to avoid performing too many RPCs on entries changing a lot.
 consul_cache_entry_fetch_rate: "No limit"
+
+
+## TLS ##
+# Specifies if the TLS should be activated.
+consul_tls_enabled: false
+# This provides a file path to a PEM-encoded certificate authority.
+# The certificate authority is used to check the authenticity of client and server connections with the appropriate verify_incoming or verify_outgoing flags.
+consul_ca_file: ""
+# This provides a path to a directory of PEM-encoded certificate authority files.
+# These certificate authorities are used to check the authenticity of client and server connections with the appropriate verify_incoming or verify_outgoing flags.
+consul_ca_path: ""
+# This provides a file path to a PEM-encoded certificate.
+# The certificate is provided to clients or servers to verify the agent's authenticity.
+# It must be provided along with key_file.
+consul_cert_file: ""
+# This provides a the file path to a PEM-encoded private key.
+# The key is used with the certificate to verify the agent's authenticity.
+# This must be provided along with cert_file.
+consul_key_file: ""
+
+##  Updates ##
+# Disables providing an anonymous signature for de-duplication with the update check.
+consul_disable_anonymous_signature: false
+# Disables automatic checking for security bulletins and new version releases.
+# This is disabled in Consul Enterprise.
+consul_disable_update_check: false
+
+
+# Setting this to true will prevent Consul from using information from the host to generate a deterministic node ID, and will instead generate a random node ID which will be persisted in the data directory.
+# This is useful when running multiple Consul agents on the same host for testing.
+# This defaults to false in Consul prior to version 0.8.5 and in 0.8.5 and later defaults to true, so you must opt-in for host-based IDs.
+# Host-based IDs are generated using gopsutil, which is shared with HashiCorp's Nomad, so if you opt-in to host-based IDs then Consul and Nomad will use information on the host to automatically assign the same ID in both systems.
+consul_disable_host_node_id: true
+# Defaults to false. 
+# Consul 1.0.3 fixed a potential security vulnerability where malicious users could craft KV keys with unprintable chars that would confuse operators using the CLI or UI into taking wrong actions.
+# Users who had data written in older versions of Consul that did not have this restriction will be unable to deletethose values by default in 1.0.3 or later.
+# This setting enables those users to temporarily disable the filter such that delete operations can work on those keys again to get back to a healthy state.
+# It is strongly recommended that this filter is not disabled permanently as it exposes the original security vulnerability.
+consul_disable_http_unprintable_char_filter: false
+# Disables support for remote execution. When set to true, the agent will ignore any incoming remote exec requests.
+# In versions of Consul prior to 0.8, this defaulted to false.
+# In Consul 0.8 the default was changed to true, to make remote exec opt-in instead of opt-out.
+consul_disable_remote_exec: true
+# Discards the output of health checks before storing them.
+# This reduces the number of writes to the Consul raft log in environments where health checks have volatile output like timestamps, process ids, ...
+consul_discard_check_output: false
+# Enables stale requests for all service discovery HTTP endpoints.
+# This is equivalent to the max_stale configuration for DNS requests.
+# If this value is zero (default), all service discovery HTTP endpoints are forwarded to the leader.
+# If this value is greater than zero, any Consul server can handle the service discovery request.
+# If a Consul server is behind the leader by more than discovery_max_stale, the query will be re-evaluated on the leader to get more up-to-date results.
+# Consul agents also add a new X-Consul-Effective-Consistency response header which indicates if the agent did a stale read.
+# discover-max-stale was introduced in Consul 1.0.7 as a way for Consul operators to force stale requests from clients at the agent level, and defaults to zero which matches default consistency behavior in earlier Consul versions.
+consul_discovery_max_stale: "0"
+
+
+## DNS ##
+# dns_config This object allows a number of sub-keys to be set which can tune how DNS queries are serviced. Check the tutorial on DNS caching for more detail.
+# Enables a stale query for DNS information.
+# This allows any Consul server, rather than only the leader, to service the request. The advantage of this is you get linear read scalability with Consul servers. In versions of Consul prior to 0.7, this defaulted to false, meaning all requests are serviced by the leader, providing stronger consistency but less throughput and higher latency. In Consul 0.7 and later, this defaults to true for better utilization of available servers.
+consul_dns_allow_stale: true
+# When allow_stale is specified, this is used to limit how stale results are allowed to be.
+# If a Consul server is behind the leader by more than max_stale, the query will be re-evaluated on the leader to get more up-to-date results.
+# Prior to Consul 0.7.1 this defaulted to 5 seconds; in Consul 0.7.1 and later this defaults to 10 years ("87600h") which effectively allows DNS queries to be answered by any server, no matter how stale.
+# In practice, servers are usually only milliseconds behind the leader, so this lets Consul continue serving requests in long outage scenarios where no leader can be elected.
+consul_dns_max_stale: "87600h"
+# By default, this is "0s", so all node lookups are served with a 0 TTL value.
+# DNS caching for node lookups can be enabled by setting this value.
+# This should be specified with the "s" suffix for second or "m" for minute.
+consul_dns_node_ttl: "0s"
+# This is a sub-object which allows for setting a TTL on service lookups with a per-service policy.
+# The "*" wildcard service can be used when there is no specific policy available for a service.
+# By default, all services are served with a 0 TTL value.
+# DNS caching for service lookups can be enabled by setting this value.
+consul_dns_service_ttl: "0s"
+# If set to true, a UDP DNS query that would return more than 3 records, or more than would fit into a valid UDP response, will set the truncated flag, indicating to clients that they should re-query using TCP to get the full set of records.
+consul_dns_enable_truncate: true
+# If set to true, any nodes whose health checks are warning or critical will be excluded from DNS results. 
+# If false, the default, only nodes whose healthchecks are failing as critical will be excluded.
+# For service lookups, the health checks of the node itself, as well as the service-specific checks are considered.
+# For example, if a node has a health check that is critical then all services on that node will be excluded because they are also considered critical.
+consul_dns_only_passing: false
+# Timeout used by Consul when recursively querying an upstream DNS server.
+# See recursors for more details. Default is 2s. This is available in Consul 0.7 and later.
+consul_dns_recursor_timeout: "2s"
+# If set to true, DNS responses will not be compressed.
+# Compression was added and enabled by default in Consul 0.7.
+consul_dns_disable_compression: true
+# Limit the number of resource records contained in the answer section of a A, AAAA or ANY DNS response (both TCP and UDP).
+# When answering a question, Consul will use the complete list of matching hosts, shuffle the list randomly, and then limit the number of answers to a_record_limit (default: no limit).
+# This limit does not apply to SRV records.
+# In environments where RFC 3484 Section 6 Rule 9 is implemented and enforced (i.e. DNS answers are always sorted and therefore never random), clients may need to set this value to 1 to preserve the expected randomized distribution behavior (note: RFC 3484 has been obsoleted by RFC 6724 and as a result it should be increasingly uncommon to need to change this value with modern resolvers).
+consul_dns_a_record_limit: "no limit"
+# When set to true, Consul will add TXT records for Node metadata into the Additional section of the DNS responses for several query types such as SRV queries.
+# When set to false those records are not emitted.
+# This does not impact the behavior of those same TXT records when they would be added to the Answer section of the response like when querying with type TXT or ANY.
+# This defaults to true.
+consul_dns_enable_additional_node_meta_txt: true
+# When set to true, DNS resolution will use the agent cache described in agent caching.
+# This setting affects all service and prepared queries DNS requests.
+# Implies allow_stale
+consul_dns_use_cache: true
+# When use_cache is enabled, the agent will attempt to re-fetch the result from the servers if the cached value is older than this duration.
+# Note that unlike the max-age HTTP header, a value of 0 for this field is equivalent to "no max age".
+# To get a fresh value from the cache use a very small value of 1ns instead of 0.
+consul_dns_cache_max_age: "1ns"
+## soa Allow to tune the setting set up in SOA. Non specified values fallback to their default values, all values are integers and expressed as seconds.
+# Configure SOA Expire duration in seconds, default value is 86400, ie: 24 hours.
+consul_dns_soa_expire: "86400"
+# Configure SOA DNS minimum TTL.
+# As explained in RFC-2308 this also controls negative cache TTL in most implementations.
+# Default value is 0, ie: no minimum delay or negative TTL.
+consul_dns_soa_min_ttl: "0"
+# Configure SOA Refresh duration in seconds, default value is 3600, ie: 1 hour.
+consul_dns_soa_refresh: "3600"
+# Configures the Retry duration expressed in seconds, default value is 600, ie: 10 minutes.
+consul_dns_soa_retry: "600"
+
+# By default, Consul responds to DNS queries in the "consul." domain. This flag can be used to change that domain. All queries in this domain are assumed to be handled by Consul and will not be recursively resolved.
+consul_domain: "consul"
+# When set, uses a subset of the agent's TLS configuration (key_file, cert_file, ca_file, ca_path, and server_name) to set up the client for HTTP or gRPC health checks.
+# This allows services requiring 2-way TLS to be checked using the agent's credentials.
+# This was added in Consul 1.0.1 and defaults to false.
+consul_enable_agent_tls_for_checks: false
+# Like enable_script_checks, but only enable them when they are defined in the local configuration files.
+# Script checks defined in HTTP API registrations will still not be allowed.
+consul_enable_local_script_checks: false
+
+## Loging and debug ##
+# When set, enables some additional debugging features.
+# Currently, this is only used to access runtime profiling HTTP endpoints, which are available with an operator:read ACL regardless of the value of enable_debug.
+consul_enable_debug: false
+# This flag enables logging to syslog.
+# This is only supported on Linux and OSX. It will result in an error if provided on Windows.
+consul_enable_syslog: false
+
+
+
+
+# Specifies the secret key to use for encryption of Consul network traffic.
+# This key must be 32-bytes that are Base64-encoded.
+# The easiest way to create an encryption key is to use consul keygen.
+# All nodes within a cluster must share the same encryption key to communicate.
+# The provided key is automatically persisted to the data directory and loaded automatically whenever the agent is restarted.
+# This means that to encrypt Consul's gossip protocol, this option only needs to be provided once on each agent's initial startup sequence.
+# If it is provided after Consul has been initialized with an encryption key, then the provided key is ignored and a warning will be displayed.
+consul_encrypt: ""
+# This is an optional parameter that can be used to disable enforcing encryption for incoming gossip in order to upshift from unencrypted to encrypted gossip on a running cluster. Defaults to true.
+consul_encrypt_verify_incoming: true
+# This is an optional parameter that can be used to disable enforcing encryption for outgoing gossip in order to upshift from unencrypted to encrypted gossip on a running cluster. Defaults to true.
+consul_encrypt_verify_outgoing: true
+# If set, the keyring will not be persisted to a file.
+# Any installed keys will be lost on shutdown, and only the given -encrypt key will be available on startup.
+# This defaults to false.
+consul_disable_keyring_file: false
+
+
+## HTTP config ##
+# http_config This object allows setting options for the HTTP API and UI.
+
+# This object is a list of HTTP API endpoint prefixes to block on the agent, and defaults to an empty list, meaning all endpoints are enabled.
+# Any endpoint that has a common prefix with one of the entries on this list will be blocked and will return a 403 response code when accessed.
+# For example, to block all of the V1 ACL endpoints, set this to ["/v1/acl"], which will block /v1/acl/create, /v1/acl/update, and the other ACL endpoints that begin with /v1/acl. This only works with API endpoints, not /ui or /debug, those must be disabled with their respective configuration options.
+# Any CLI commands that use disabled endpoints will no longer function as well. For more general access control, Consul's ACL system should be used, but this option is useful for removing access to HTTP API endpoints completely, or on specific agents.
+# This is available in Consul 0.9.0 and later.
+consul_http_block_endpoints: []
+
+# This object is a list of networks in CIDR notation (eg "127.0.0.0/8") that are allowed to call the agent write endpoints.
+# It defaults to an empty list, which means all networks are allowed.
+# This is used to make the agent read-only, except for select ip ranges.
+# - To block write calls from anywhere, use [ "255.255.255.255/32" ].
+# - To only allow write calls from localhost, use [ "127.0.0.0/8" ]
+# - To only allow specific IPs, use [ "10.0.0.1/32", "10.0.0.2/32" ]
+consul_http_allow_write_http_from: []
+
+# Defaults to true. If disabled, the agent won't be using agent caching to answer the request.
+# Even when the url parameter is provided.
+consul_http_use_cache: true
+
+# This object allows adding headers to the HTTP API and UI responses.
+consul_http_response_headers: {}
+#  Access-Control-Allow-Origin: "*"
+#  Access-Control-Allow-Methods: "POST, GET, OPTIONS, DELETE, PUT"
+
+
+## Limits ##
+# limits Available in Consul 0.9.3 and later, this is a nested object that configures limits that are enforced by the agent.
+# Prior to Consul 1.5.2, this only applied to agents in client mode, not Consul servers.
+# The following parameters are available:
+
+# Configures a limit of how many concurrent TCP connections a single client IP address is allowed to open to the agent's HTTP(S) server.
+# This affects the HTTP(S) servers in both client and server agents. Default value is 200.
+consul_limits_http_max_conns_per_client: "200"
+
+#Configures the limit for how long the HTTPS server in both client and server agents will wait for a client to complete a TLS handshake.
+# This should be kept conservative as it limits how many connections an unauthenticated attacker can open if verify_incoming is being using to authenticate clients (strongly recommended in production).
+# Default value is 5s.
+consul_limits_https_handshake_timeout: "5s"
+
+# Configures the limit for how long servers will wait after a client TCP connection is established before they complete the connection handshake.
+# When TLS is used, the same timeout applies to the TLS handshake separately from the initial protocol negotiation.
+# All Consul clients should perform this immediately on establishing a new connection.
+# This should be kept conservative as it limits how many connections an unauthenticated attacker can open if verify_incoming is being using to authenticate clients (strongly recommended in production).
+# When verify_incoming is true on servers, this limits how long the connection socket and associated goroutines will be held open before the client successfully authenticates.
+# Default value is 5s.
+consul_limits_rpc_handshake_timeout: "5s"
+
+# Configures a limit of how many concurrent TCP connections a single source IP address is allowed to open to a single server.
+# It affects both clients connections and other server connections.
+# In general Consul clients multiplex many RPC calls over a single TCP connection so this can typically be kept low.
+# It needs to be more than one though since servers open at least one additional connection for raft RPC, possibly more for WAN federation when using network areas, and snapshot requests from clients run over a separate TCP conn.
+# A reasonably low limit significantly reduces the ability of an unauthenticated attacker to consume unbounded resources by holding open many connections.
+# You may need to increase this if WAN federated servers connect via proxies or NAT gateways or similar causing many legitimate connections from a single source IP.
+# Default value is 100 which is designed to be extremely conservative to limit issues with certain deployment patterns.
+# Most deployments can probably reduce this safely.
+# 100 connections on modern server hardware should not cause a significant impact on resource usage from an unauthenticated attacker though.
+consul_limits_rpc_max_conns_per_client: "100"
+
+# Configures the RPC rate limiter on Consul clients by setting the maximum request rate that this agent is allowed to make for RPC requests to Consul servers, in requests per second.
+# Defaults to infinite, which disables rate limiting.
+consul_limits_rpc_rate: "infinite"
+
+# The size of the token bucket used to recharge the RPC rate limiter on Consul clients.
+# Defaults to 1000 tokens, and each token is good for a single RPC call to a Consul server.
+# See https://en.wikipedia.org/wiki/Token_bucket for more details about how token bucket rate limiters operate.
+consul_limits_rpc_max_burst: "1000"
+
+# (Advanced) Configures the maximum number of bytes for a kv request body to the /v1/kv endpoint.
+# This limit defaults to raft's suggested max size (512KB).
+# Note that tuning these improperly can cause Consul to fail in unexpected ways, it may potentially affect leadership stability and prevent timely heartbeat signals by increasing RPC IO duration.
+# This option affects the txn endpoint too, but Consul 1.7.2 introduced txn_max_req_len which is the preferred way to set the limit for the txn endpoint. If both limits are set, the higher one takes precedence.
+consul_limits_kv_max_value_size: "512KB"
+
+# (Advanced) Configures the maximum number of bytes for a transaction request body to the /v1/txn endpoint.
+# This limit defaults to raft's suggested max size (512KB).
+# Note that tuning these improperly can cause Consul to fail in unexpected ways, it may potentially affect leadership stability and prevent timely heartbeat signals by increasing RPC IO duration.
+consul_limits_txn_max_req_len: "512KB"
+
+#TODO - https://www.consul.io/docs/agent/options.html#log_file
+
+
+
+
+
+
+
+
+
+
+
+
+# If enabled, when the agent receives a TERM signal, it will send a Leave message to the rest of the cluster and gracefully leave.
+# The default behavior for this feature varies based on whether or not the agent is running as a client or a server (prior to Consul 0.7 the default value was unconditionally set to false).
+# On agents in client-mode, this defaults to true and for agents in server-mode, this defaults to false.
+consul_leave_on_terminate: "\
+  {% set _consul_leave_on_terminate = '' %}\
+  {% if ( consul_node_role == 'server' or _consul_node_role == 'both') %}\
+    {% set _consul_leave_on_terminate = false %}\
+  {% elif consul_node_role == 'client' %}\
+    {% set _consul_leave_on_terminate = true %}\
+  {% endif %}\
+  {{ _consul_leave_on_terminate }}"
+
+
+
 
 
 # Для мастера
