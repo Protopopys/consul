@@ -1,0 +1,27 @@
+---
+## HTTP config ##
+# http_config This object allows setting options for the HTTP API and UI.
+
+# This object is a list of HTTP API endpoint prefixes to block on the agent, and defaults to an empty list, meaning all endpoints are enabled.
+# Any endpoint that has a common prefix with one of the entries on this list will be blocked and will return a 403 response code when accessed.
+# For example, to block all of the V1 ACL endpoints, set this to ["/v1/acl"], which will block /v1/acl/create, /v1/acl/update, and the other ACL endpoints that begin with /v1/acl. This only works with API endpoints, not /ui or /debug, those must be disabled with their respective configuration options.
+# Any CLI commands that use disabled endpoints will no longer function as well. For more general access control, Consul's ACL system should be used, but this option is useful for removing access to HTTP API endpoints completely, or on specific agents.
+# This is available in Consul 0.9.0 and later.
+consul_http_block_endpoints: []
+
+# This object is a list of networks in CIDR notation (eg "127.0.0.0/8") that are allowed to call the agent write endpoints.
+# It defaults to an empty list, which means all networks are allowed.
+# This is used to make the agent read-only, except for select ip ranges.
+# - To block write calls from anywhere, use [ "255.255.255.255/32" ].
+# - To only allow write calls from localhost, use [ "127.0.0.0/8" ]
+# - To only allow specific IPs, use [ "10.0.0.1/32", "10.0.0.2/32" ]
+consul_http_allow_write_http_from: []
+
+# Defaults to true. If disabled, the agent won't be using agent caching to answer the request.
+# Even when the url parameter is provided.
+consul_http_use_cache: true
+
+# This object allows adding headers to the HTTP API and UI responses.
+consul_http_response_headers: {}
+#  Access-Control-Allow-Origin: "*"
+#  Access-Control-Allow-Methods: "POST, GET, OPTIONS, DELETE, PUT"

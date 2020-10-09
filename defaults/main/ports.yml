@@ -1,0 +1,47 @@
+---
+## Ports ##
+# This is a nested object that allows setting the bind ports for the following keys:
+
+# The DNS server, -1 to disable. Default 8600. TCP and UDP.
+consul_ports_dns: "8600"
+
+# The HTTP API, -1 to disable. Default 8500. TCP only.
+consul_ports_http: "8500"
+
+# The HTTPS API, -1 to disable. Default -1 (disabled).
+# We recommend using 8501 for https by convention as some tooling will work automatically with this.
+consul_ports_https: "-1"
+
+# The gRPC API, -1 to disable. Default -1 (disabled).
+# We recommend using 8502 for grpc by convention as some tooling will work automatically with this.
+# This is set to 8502 by default when the agent runs in -dev mode.
+# Currently gRPC is only used to expose Envoy xDS API to Envoy proxies.
+consul_ports_grpc: "-1"
+
+# The Serf LAN port. 
+# Default 8301. TCP and UDP.
+consul_ports_serf_lan: "8301"
+
+# The Serf WAN port. Default 8302.
+# Set to -1 to disable. Note: this will disable WAN federation which is not recommended.
+# Various catalog and WAN related endpoints will return errors or empty results. TCP and UDP.
+consul_ports_serf_wan: "8302"
+
+# Server RPC address. Default 8300. TCP only.
+consul_ports_server: "8300"
+
+# Inclusive minimum port number to use for automatically assigned sidecar service registrations.
+# Default 21000. Set to 0 to disable automatic port assignment.
+consul_ports_sidecar_min_port: "21000"
+
+# Inclusive maximum port number to use for automatically assigned sidecar service registrations.
+# Default 21255. Set to 0 to disable automatic port assignment.
+consul_ports_sidecar_max_port: "21255"
+
+# Inclusive minimum port number to use for automatically assigned exposed check listeners.
+# Default 21500. Set to 0 to disable automatic port assignment.
+consul_ports_expose_min_port: "21500"
+
+# Inclusive maximum port number to use for automatically assigned exposed check listeners.
+# Default 21755. Set to 0 to disable automatic port assignment.
+consul_ports_expose_max_port: "21755"

@@ -1,10 +1,72 @@
+node_name = "{{ consul_node_name }}"
+{% if consul_node_id | length > 0 and not consul_disable_host_node_id %}
+node_id = "{{ consul_node_id }}"
+{% endif %}
+disable_host_node_id = {{ consul_disable_host_node_id | bool | lower }}
+
+server = {{ consul_server | bool | lower }}
+{% if consul_server and consul_server_name | length > 0 %}
+# When provided, this overrides the node_name for the TLS certificate.
+server_name = "{{ consul_server_name }}"
+{% endif %}
+{% if consul_server %}
+bootstrap_expect = "{{ consul_bootstrap_expect }}"
+ui = {{ consul_ui | bool | lower }}
+{% endif %}
+
+node_meta {
+{% for key, value in consul_node_meta.items() %}
+    "{{ key }}" = "{{ value }}"
+{% endfor %}    
+}
+
 datacenter = "{{ consul_datacenter }}"
 
+## Addresses ##
 bind_addr = "{{ consul_bind_addr }}"
 client_addr = "{{ consul_client_addr }}"
 
-
+## Directories ##
 data_dir = "{{ consul_data_dir }}"
+
+
+retry_join = [ {{ consul_retry_join | map("to_json") | join(', ') }} ]
+rejoin_after_leave = {{ consul_rejoin_after_leave | bool | lower }}
+retry_interval = "{{ consul_retry_interval }}"
+{% if consul_retry_join_wan is defined and consul_retry_join_wan | length > 0 %}
+retry_join_wan = [ {{ consul_retry_join_wan | map("to_json") | join(', ') }} ]
+{% endif %}
+retry_interval_wan = "{{ consul_retry_interval_wan }}"
+
+check_update_interval = "{{ consul_check_update_interval }}"
+
+disable_http_unprintable_char_filter = {{ consul_disable_http_unprintable_char_filter | bool | lower }}
+disable_remote_exec = {{ consul_disable_remote_exec | bool | lower }}
+discard_check_output = {{ consul_discard_check_output | bool | lower }}
+discovery_max_stale = "{{ consul_discovery_max_stale }}"
+
+enable_local_script_checks = {{ consul_enable_local_script_checks | bool | lower }}
+{% if consul_encrypt is defined and consul_encrypt | length > 0 %}
+encrypt = {{ consul_encrypt }}
+{% endif %}
+encrypt_verify_incoming = {{ consul_encrypt_verify_incoming | bool | lower }}
+encrypt_verify_outgoing = {{ consul_encrypt_verify_outgoing | bool | lower }}
+disable_keyring_file = {{ consul_disable_keyring_file | bool | lower }}
+leave_on_terminate = {{ consul_leave_on_terminate | bool | lower }}
+skip_leave_on_interrupt = {{ consul_skip_leave_on_interrupt | bool | lower }}
+
+default_query_time = "{{ consul_default_query_time }}"
+max_query_time = "{{ consul_max_query_time }}"
+session_ttl_min = "{{ consul_session_ttl_min }}"
+
+raft_snapshot_threshold = "{{ consul_raft_snapshot_threshold }}"
+raft_snapshot_interval = "{{ consul_raft_snapshot_interval }}"
+raft_trailing_logs = "{{ consul_raft_trailing_logs }}"
+
+reconnect_timeout = "{{ consul_reconnect_timeout }}"
+reconnect_timeout_wan = "{{ consul_reconnect_timeout_wan }}"
+
+translate_wan_addrs = {{ consul_translate_wan_addrs | bool | lower}}
 
 ## ACLs ##
 acl {
@@ -18,19 +80,19 @@ acl {
     enable_token_replication = {{ consul_acl_enable_token_replication | bool | lower }}
     enable_token_persistence = {{ consul_acl_enable_token_persistence | bool | lower }}
     tokens {
-{% if consul_acl_tokens_master is defined and consul_acl_tokens_master | length > 0 %}
+{% if consul_acl_tokens_master | length > 0 %}
         master = "{{ consul_acl_tokens_master }}"
 {% endif %}
-{% if consul_acl_tokens_default is defined and consul_acl_tokens_default | length > 0 %}
+{% if consul_acl_tokens_default | length > 0 %}
         default = "{{ consul_acl_tokens_default }}"
 {% endif %}
-{% if consul_acl_tokens_agent is defined and consul_acl_tokens_agent | length > 0 %}
+{% if consul_acl_tokens_agent | length > 0 %}
         agent = "{{ consul_acl_tokens_agent }}"
 {% endif %}
-{% if consul_acl_tokens_agent_master is defined and consul_acl_tokens_agent_master | length > 0 %}
+{% if consul_acl_tokens_agent_master | length > 0 %}
         agent_master = "{{ consul_acl_tokens_agent_master }}"
 {% endif %}
-{% if consul_acl_tokens_replication is defined and consul_acl_tokens_replication | length > 0 %}
+{% if consul_acl_tokens_replication | length > 0 %}
         replication = "{{ consul_acl_tokens_replication }}"
 {% endif %}
     }
@@ -53,18 +115,9 @@ cache {
     entry_fetch_rate = "{{ consul_cache_entry_fetch_rate }}"
 }
 
-check_update_interval = "{{ consul_check_update_interval }}"
-disable_host_node_id = {{ consul_disable_host_node_id | bool | lower }}
-disable_http_unprintable_char_filter = {{ consul_disable_http_unprintable_char_filter | bool | lower }}
-disable_remote_exec = {{ consul_disable_remote_exec | bool | lower }}
-discard_check_output = {{ consul_discard_check_output | bool | lower }}
-discovery_max_stale = "{{ consul_discovery_max_stale }}"
-domain = "{{ consul_domain }}"
-enable_agent_tls_for_checks = {{ consul_enable_agent_tls_for_checks | bool | lower }}
-enable_local_script_checks = {{ consul_enable_local_script_checks | bool | lower }}
-
 {% if consul_tls_enabled %}
 ## TLS ##
+enable_agent_tls_for_checks = {{ consul_enable_agent_tls_for_checks | bool | lower }}
 ca_file = "{{ consul_ca_file }}"
 ca_path = "{{ consul_ca_path }}"
 cert_file = "{{ consul_cert_file }}"
@@ -72,36 +125,22 @@ key_file = "{{ consul_key_file }}"
 tls_min_version = "{{ consul_tls_min_version }}"
 tls_cipher_suites = "{{ consul_tls_cipher_suites }}"
 tls_prefer_server_cipher_suites = {{ consul_tls_prefer_server_cipher_suites | bool | lower }}
+verify_incoming = {{ consul_verify_incoming | bool | lower }}
+verify_incoming_rpc = {{ consul_verify_incoming_rpc | bool | lower }}
+verify_incoming_https = {{ consul_verify_incoming_https | bool | lower }}
+verify_outgoing = {{ consul_verify_outgoing | bool | lower }}
+verify_server_hostname = {{ consul_verify_outgoing | bool | lower }}
 {% endif %}
-
-{% if consul_encrypt is defined and consul_encrypt | length > 0 %}
-encrypt = {{ consul_encrypt }}
-{% endif %}
-encrypt_verify_incoming = {{ consul_encrypt_verify_incoming | bool | lower }}
-encrypt_verify_outgoing = {{ consul_encrypt_verify_outgoing | bool | lower }}
-disable_keyring_file = {{ consul_disable_keyring_file | bool | lower }}
-leave_on_terminate = {{ consul_leave_on_terminate | bool | lower }}
-skip_leave_on_interrupt = {{ consul_skip_leave_on_interrupt | bool | lower }}
-default_query_time = "{{ consul_default_query_time }}"
-max_query_time = "{{ consul_max_query_time }}"
-session_ttl_min = "{{ consul_session_ttl_min }}"
-
-{% if consul_node_id is defined and consul_node_id | length > 0 and not consul_disable_host_node_id %}
-node_id = "{{ consul_node_id }}"
-{% endif %}
-node_name = "{{ consul_node_name }}"
-node_meta {
-{% for key, value in consul_node_meta.items() %}
-    "{{ key }}" = "{{ value }}"
-{% endfor %}    
-}
 
 ## Updates ##
 disable_anonymous_signature = {{ consul_disable_anonymous_signature | bool | lower }}
 disable_update_check = {{ consul_disable_update_check | bool | lower }}
 
-
 ## DNS ##
+domain = "{{ consul_domain }}"
+{% if consul_recursors | length > 0 %}
+recursors = [ {{ consul_recursors | map("to_json") | join(', ') }} ]
+{% endif %}
 dns_config {
     allow_stale = {{ consul_dns_allow_stale | bool | lower }}
     max_stale = "{{ consul_dns_max_stale }}"
@@ -134,7 +173,6 @@ log_rotate_bytes = "{{ consul_log_rotate_bytes }}"
 log_rotate_max_files = "{{ consul_log_rotate_max_files }}"
 log_level = "{{ consul_log_level }}"
 log_json = {{ consul_log_json | bool | lower }}
-
 
 ## HTTP config ##
 http_config {
@@ -180,72 +218,4 @@ ports {
     sidecar_max_port = "{{ consul_ports_sidecar_max_port }}"
     expose_min_port = "{{ consul_ports_expose_min_port }}"
     expose_max_port = "{{ consul_ports_expose_max_port }}"
-}
-
-raft_snapshot_threshold = "{{ consul_raft_snapshot_threshold }}"
-raft_snapshot_interval = "{{ consul_raft_snapshot_interval }}"
-raft_trailing_logs = "{{ consul_raft_trailing_logs }}"
-reconnect_timeout = "{{ consul_reconnect_timeout }}"
-reconnect_timeout_wan = "{{ consul_reconnect_timeout_wan }}"
-{% if consul_recursors is defined and consul_recursors | length > 0 %}
-recursors = [ {{ consul_recursors | map("to_json") | join(', ') }} ]
-{% endif %}
-rejoin_after_leave = {{ consul_rejoin_after_leave | bool | lower }}
-retry_join = [ {{ consul_retry_join | map("to_json") | join(', ') }} ]
-retry_interval = "{{ consul_retry_interval }}"
-{% if consul_retry_join_wan is defined and consul_retry_join_wan | length > 0 %}
-retry_join_wan = [ {{ consul_retry_join_wan | map("to_json") | join(', ') }} ]
-{% endif %}
-retry_interval_wan = "{{ consul_retry_interval_wan }}"
-
-
-{% if consul_server %}
-server = true
-{% if consul_server_name is defined and consul_server_name | length > 0 %}
-server_name = "{{ consul_server_name }}"
-{% endif %}
-{% endif %}
-
-non_voting_server = 
-server_name = 
-session_ttl_min = 
-skip_leave_on_interrupt = 
-start_join = 
-start_join_wan = 
-
-
-
-
-{
-    "bind_addr": "{{ consul.bind_addr }}",
-    "node_name": "{{ consul.node_name }}",
-    "server": {% if consul_node_role == 'master' %}true{% else %}false{%endif%},
-{% if consul_node_role == 'master' %}
-    "bootstrap_expect": {{ consul.bootstrap_expect }},
-    "client_addr": "{{ consul.client_address }}",
-    "enable_script_checks": {{ consul.enable_script_checks | bool | lower }},
-    "dns_config": {
-        "enable_truncate": true,
-        "only_passing": true
-    },
-    "domain": "{{ consul.domain }}",
-    "rejoin_after_leave": {{ consul.rejoin_after_leave | bool | lower  }},
-    "ui": {{ consul.ui | bool | lower  }},
-{% endif %}
-{% if consul.cors_allowed | bool | lower | default(false) %}
-    "http_config": {
-        "response_headers": {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "{{ consul.cors_allow_methods }}"
-        }
-    },
-{% endif %}
-    "datacenter": "{{ consul.datacenter }}",
-    "data_dir": "{{ consul.data_dir }}",
-    "enable_syslog": {{ consul.enable_syslog | bool | lower  }},
-    "encrypt": "{{ consul.encrypt }}",
-    "leave_on_terminate": {{ consul.leave_on_terminate | bool | lower  }},
-    "log_level": "{{ consul.log_level }}",
-    "disable_update_check": {{ consul.disable_update_check | bool | lower  }},
-    "retry_join": [ {% for item in consul.retry_join %}"{{ item }}"{% if not loop.last %}, {% endif %}{% endfor %} ]
 }

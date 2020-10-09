@@ -1,0 +1,26 @@
+---
+## Autopilot ##
+# Added in Consul 0.8, this object allows a number of sub-keys to be set which can configure operator-friendly settings for Consul servers.
+# When these keys are provided as configuration, they will only be respected on bootstrapping.
+# If they are not provided, the defaults will be used. In order to change the value of these options after bootstrapping, you will need to use the Consul Operator Autopilot command.
+# For more information about Autopilot, review the Autopilot tutorial.
+
+# This controls the automatic removal of dead server nodes periodically and whenever a new server is added to the cluster. Defaults to true.
+consul_autopilot_cleanup_dead_servers: true
+
+# Controls the maximum amount of time a server can go without contact from the leader before being considered unhealthy.
+# Must be a duration value such as 10s. Defaults to 200ms
+consul_autopilot_last_contact_threshold: "200mc"
+
+# Controls the maximum number of log entries that a server can trail the leader by before being considered unhealthy.
+# Defaults to 250
+consul_autopilot_max_trailing_logs: 250
+
+# Sets the minimum number of servers necessary in a cluster before autopilot can prune dead servers.
+# There is no default.
+consul_autopilot_min_quorum: ""
+
+# Controls the minimum amount of time a server must be stable in the 'healthy' state before being added to the cluster.
+# Only takes effect if all servers are running Raft protocol version 3 or higher.
+# Must be a duration value such as 30s. Defaults to 10s.
+consul_autopilot_server_stabilization_time: "10s"
