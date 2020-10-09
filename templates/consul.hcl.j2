@@ -69,6 +69,9 @@ ca_file = "{{ consul_ca_file }}"
 ca_path = "{{ consul_ca_path }}"
 cert_file = "{{ consul_cert_file }}"
 key_file = "{{ consul_key_file }}"
+tls_min_version = "{{ consul_tls_min_version }}"
+tls_cipher_suites = "{{ consul_tls_cipher_suites }}"
+tls_prefer_server_cipher_suites = {{ consul_tls_prefer_server_cipher_suites | bool | lower }}
 {% endif %}
 
 {% if consul_encrypt is defined and consul_encrypt | length > 0 %}
@@ -78,8 +81,11 @@ encrypt_verify_incoming = {{ consul_encrypt_verify_incoming | bool | lower }}
 encrypt_verify_outgoing = {{ consul_encrypt_verify_outgoing | bool | lower }}
 disable_keyring_file = {{ consul_disable_keyring_file | bool | lower }}
 leave_on_terminate = {{ consul_leave_on_terminate | bool | lower }}
+skip_leave_on_interrupt = {{ consul_skip_leave_on_interrupt | bool | lower }}
 default_query_time = "{{ consul_default_query_time }}"
 max_query_time = "{{ consul_max_query_time }}"
+session_ttl_min = "{{ consul_session_ttl_min }}"
+
 {% if consul_node_id is defined and consul_node_id | length > 0 and not consul_disable_host_node_id %}
 node_id = "{{ consul_node_id }}"
 {% endif %}
@@ -120,6 +126,8 @@ dns_config {
 ## Loging and debug ##
 enable_debug = {{ consul_enable_debug | bool | lower }}
 enable_syslog = {{ consul_enable_syslog | bool | lower }}
+syslog_facility = "{{ consul_syslog_facility }}"
+
 log_file = "{{ consul_log_file }}"
 log_rotate_duration = "{{ consul_log_rotate_duration }}"
 log_rotate_bytes = "{{ consul_log_rotate_bytes }}"
@@ -152,6 +160,58 @@ limits {
     txn_max_req_len = "{{ consul_limits_txn_max_req_len }}"
 }
 
+## Performance ##
+performance {
+    leave_drain_time = "{{ consul_performance_leave_drain_time }}"
+    raft_multiplier = "{{ consul_performance_raft_multiplier }}"
+    rpc_hold_timeout = "{{ consul_performance_rpc_hold_timeout }}"
+}
+
+## Ports ##
+ports {
+    dns = "{{ consul_ports_dns }}"
+    http = "{{ consul_ports_http }}"
+    https = "{{ consul_ports_https }}"
+    grpc = "{{ consul_ports_grpc }}"
+    serf_lan = "{{ consul_ports_serf_lan }}"
+    serf_wan = "{{ consul_ports_serf_wan }}"
+    server = "{{ consul_ports_server }}"
+    sidecar_min_port = "{{ consul_ports_sidecar_min_port }}"
+    sidecar_max_port = "{{ consul_ports_sidecar_max_port }}"
+    expose_min_port = "{{ consul_ports_expose_min_port }}"
+    expose_max_port = "{{ consul_ports_expose_max_port }}"
+}
+
+raft_snapshot_threshold = "{{ consul_raft_snapshot_threshold }}"
+raft_snapshot_interval = "{{ consul_raft_snapshot_interval }}"
+raft_trailing_logs = "{{ consul_raft_trailing_logs }}"
+reconnect_timeout = "{{ consul_reconnect_timeout }}"
+reconnect_timeout_wan = "{{ consul_reconnect_timeout_wan }}"
+{% if consul_recursors is defined and consul_recursors | length > 0 %}
+recursors = [ {{ consul_recursors | map("to_json") | join(', ') }} ]
+{% endif %}
+rejoin_after_leave = {{ consul_rejoin_after_leave | bool | lower }}
+retry_join = [ {{ consul_retry_join | map("to_json") | join(', ') }} ]
+retry_interval = "{{ consul_retry_interval }}"
+{% if consul_retry_join_wan is defined and consul_retry_join_wan | length > 0 %}
+retry_join_wan = [ {{ consul_retry_join_wan | map("to_json") | join(', ') }} ]
+{% endif %}
+retry_interval_wan = "{{ consul_retry_interval_wan }}"
+
+
+{% if consul_server %}
+server = true
+{% if consul_server_name is defined and consul_server_name | length > 0 %}
+server_name = "{{ consul_server_name }}"
+{% endif %}
+{% endif %}
+
+non_voting_server = 
+server_name = 
+session_ttl_min = 
+skip_leave_on_interrupt = 
+start_join = 
+start_join_wan = 
 
 
 

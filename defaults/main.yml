@@ -73,7 +73,7 @@ consul_data_dir: "/DATA/consul"
 consul_bin_dir: "/opt/consul/{{ consul_version }}"
 
 
-#TODO auto_config, auto_encrypt, connect - https://www.consul.io/docs/agent/options.html#connect, config_entries - https://www.consul.io/docs/agent/options.html#config_entries / gossip_lan - https://www.consul.io/docs/agent/options.html#gossip_lan / gossip_wan - https://www.consul.io/docs/agent/options.html#gossip_wan
+#TODO auto_config, auto_encrypt, connect - https://www.consul.io/docs/agent/options.html#connect, config_entries - https://www.consul.io/docs/agent/options.html#config_entries / gossip_lan - https://www.consul.io/docs/agent/options.html#gossip_lan / gossip_wan - https://www.consul.io/docs/agent/options.html#gossip_wan / telemetry https://www.consul.io/docs/agent/options.html#telemetry
 
 ## ACLs ##
 # Enables ACLs.
@@ -201,8 +201,20 @@ consul_bind_addr:  "0.0.0.0"
 consul_client_addr: "127.0.0.1"
 
 ## Server only ##
-consul_server_enabled: "{{ (consul_node_role == 'server') or (consul_node_role == 'both') }}"
-# This flag provides the number of expected servers in the datacenter.
+# This flag is used to control if an agent is in server or client mode.
+# When provided, an agent will act as a Consul server.
+# Each Consul cluster must have at least one server and ideally no more than 5 per datacenter.
+# All servers participate in the Raft consensus algorithm to ensure that transactions occur in a consistent, linearizable manner.
+# Transactions modify cluster state, which is maintained on all server nodes to ensure availability in the case of node failure.
+# Server nodes also participate in a WAN gossip pool with server nodes in other datacenters.
+# Servers act as gateways to other datacenters and forward traffic as appropriate.
+consul_server: "{{ (consul_node_role == 'server') or (consul_node_role == 'both') }}"
+
+# When provided, this overrides the node_name for the TLS certificate.
+# It can be used to ensure that the certificate name matches the hostname we declare.
+consul_server_name: "" 
+
+  # This flag provides the number of expected servers in the datacenter.
 # Either this value should not be provided or the value must agree with other servers in the cluster.
 # When provided, Consul waits until the specified number of servers are available and then bootstraps the cluster.
 # This allows an initial leader to be elected automatically. 
@@ -252,6 +264,14 @@ consul_cert_file: ""
 # The key is used with the certificate to verify the agent's authenticity.
 # This must be provided along with cert_file.
 consul_key_file: ""
+# Added in Consul 0.7.4, this specifies the minimum supported version of TLS. Accepted values are "tls10", "tls11", "tls12", or "tls13". This defaults to "tls12". WARNING: TLS 1.1 and lower are generally considered less secure; avoid using these if possible.
+consul_tls_min_version: "tls12"
+# Added in Consul 0.8.2, this specifies the list of supported ciphersuites as a comma-separated-list.
+# The list of all supported ciphersuites is available through this search.
+consul_tls_cipher_suites: ""
+# Added in Consul 0.8.2, this will cause Consul to prefer the server's ciphersuite over the client ciphersuites.
+consul_tls_prefer_server_cipher_suites: true
+
 
 ##  Updates ##
 # Disables providing an anonymous signature for de-duplication with the update check.
@@ -379,6 +399,8 @@ consul_enable_debug: false
 # This flag enables logging to syslog.
 # This is only supported on Linux and OSX. It will result in an error if provided on Windows.
 consul_enable_syslog: false
+# When enable_syslog is provided, this controls to which facility messages are sent. By default, LOCAL0 will be used.
+consul_syslog_facility: "LOCAL0"
 # Writes all the Consul agent log messages to a file.
 # This value is used as a prefix for the log file name.
 # The current timestamp is appended to the file name.
@@ -518,12 +540,63 @@ consul_limits_kv_max_value_size: "512KB"
 # Note that tuning these improperly can cause Consul to fail in unexpected ways, it may potentially affect leadership stability and prevent timely heartbeat signals by increasing RPC IO duration.
 consul_limits_txn_max_req_len: "512KB"
 
-# TODO https://www.consul.io/docs/agent/options.html#performance
+## Performance ##
+# Available in Consul 0.7 and later, this is a nested object that allows tuning the performance of different subsystems in Consul.
+# See the Server Performance documentation for more details.
+# The following parameters are available:
+
+# A duration that a server will dwell during a graceful leave in order to allow requests to be retried against other Consul servers.
+# Under normal circumstances, this can prevent clients from experiencing "no leader" errors when performing a rolling update of the Consul servers.
+# This was added in Consul 1.0. Must be a duration value such as 10s. Defaults to 5s.
+consul_performance_leave_drain_time: "5s"
+# An integer multiplier used by Consul servers to scale key Raft timing parameters. Omitting this value or setting it to 0 uses default timing described below.
+# Lower values are used to tighten timing and increase sensitivity while higher values relax timings and reduce sensitivity.
+# Tuning this affects the time it takes Consul to detect leader failures and to perform leader elections, at the expense of requiring more network and CPU resources for better performance.
+# By default, Consul will use a lower-performance timing that's suitable for minimal Consul servers, currently equivalent to setting this to a value of 5 (this default may be changed in future versions of Consul, depending if the target minimum server profile changes).
+# Setting this to a value of 1 will configure Raft to its highest-performance mode, equivalent to the default timing of Consul prior to 0.7, and is recommended for production Consul servers.
+# See the note on last contact timing for more details on tuning this parameter. The maximum allowed value is 10.
+consul_performance_raft_multiplier: "5"
+# A duration that a client or server will retry internal RPC requests during leader elections.
+# Under normal circumstances, this can prevent clients from experiencing "no leader" errors. This was added in Consul 1.0. Must be a duration value such as 10s. Defaults to 7s.
+consul_performance_rpc_hold_timeout: "7s"
 
 
+## Ports ##
+# This is a nested object that allows setting the bind ports for the following keys:
 
-
-
+# The DNS server, -1 to disable. Default 8600. TCP and UDP.
+consul_ports_dns: "8600"
+# The HTTP API, -1 to disable. Default 8500. TCP only.
+consul_ports_http: "8500"
+# The HTTPS API, -1 to disable. Default -1 (disabled).
+# We recommend using 8501 for https by convention as some tooling will work automatically with this.
+consul_ports_https: "-1"
+# The gRPC API, -1 to disable. Default -1 (disabled).
+# We recommend using 8502 for grpc by convention as some tooling will work automatically with this.
+# This is set to 8502 by default when the agent runs in -dev mode.
+# Currently gRPC is only used to expose Envoy xDS API to Envoy proxies.
+consul_ports_grpc: "-1"
+# The Serf LAN port. 
+# Default 8301. TCP and UDP.
+consul_ports_serf_lan: "8301"
+# The Serf WAN port. Default 8302.
+# Set to -1 to disable. Note: this will disable WAN federation which is not recommended.
+# Various catalog and WAN related endpoints will return errors or empty results. TCP and UDP.
+consul_ports_serf_wan: "8302"
+# Server RPC address. Default 8300. TCP only.
+consul_ports_server: "8300"
+# Inclusive minimum port number to use for automatically assigned sidecar service registrations.
+# Default 21000. Set to 0 to disable automatic port assignment.
+consul_ports_sidecar_min_port: "21000"
+# Inclusive maximum port number to use for automatically assigned sidecar service registrations.
+# Default 21255. Set to 0 to disable automatic port assignment.
+consul_ports_sidecar_max_port: "21255"
+# Inclusive minimum port number to use for automatically assigned exposed check listeners.
+# Default 21500. Set to 0 to disable automatic port assignment.
+consul_ports_expose_min_port: "21500"
+# Inclusive maximum port number to use for automatically assigned exposed check listeners.
+# Default 21755. Set to 0 to disable automatic port assignment.
+consul_ports_expose_max_port: "21755"
 
 
 
@@ -542,7 +615,82 @@ consul_leave_on_terminate: "\
     {% set _consul_leave_on_terminate = true %}\
   {% endif %}\
   {{ _consul_leave_on_terminate }}"
+# This is similar to leave_on_terminate but only affects interrupt handling.
+# When Consul receives an interrupt signal (such as hitting Control-C in a terminal), Consul will gracefully leave the cluster.
+# Setting this to true disables that behavior.
+# The default behavior for this feature varies based on whether or not the agent is running as a client or a server (prior to Consul 0.7 the default value was unconditionally set to false).
+# On agents in client-mode, this defaults to false and for agents in server-mode, this defaults to true (i.e. Ctrl-C on a server will keep the server in the cluster and therefore quorum, and Ctrl-C on a client will gracefully leave).
+consul_skip_leave_on_interrupt: "\
+{% set _consul_skip_leave_on_interrupt = '' %}\
+{% if ( consul_node_role == 'server' or _consul_node_role == 'both') %}\
+  {% set _consul_skip_leave_on_interrupt = true %}\
+{% elif consul_node_role == 'client' %}\
+  {% set _cskip_leave_on_interrupt = false %}\
+{% endif %}\
+{{ _consul_skip_leave_on_interrupt }}"
 
+# This controls the minimum number of raft commit entries between snapshots that are saved to disk.
+# This is a low-level parameter that should rarely need to be changed.
+# Very busy clusters experiencing excessive disk IO may increase this value to reduce disk IO, and minimize the chances of all servers taking snapshots at the same time.
+# Increasing this trades off disk IO for disk space since the log will grow much larger and the space in the raft.db file can't be reclaimed till the next snapshot.
+# Servers may take longer to recover from crashes or failover if this is increased significantly as more logs will need to be replayed.
+# In Consul 1.1.0 and later this defaults to 16384, and in prior versions it was set to 8192.
+consul_raft_snapshot_threshold: "16384"
+
+# This controls how often servers check if they need to save a snapshot to disk.
+# This is a low-level parameter that should rarely need to be changed.
+# Very busy clusters experiencing excessive disk IO may increase this value to reduce disk IO, and minimize the chances of all servers taking snapshots at the same time.
+# Increasing this trades off disk IO for disk space since the log will grow much larger and the space in the raft.db file can't be reclaimed till the next snapshot.
+# Servers may take longer to recover from crashes or failover if this is increased significantly as more logs will need to be replayed.
+# In Consul 1.1.0 and later this defaults to 30s, and in prior versions it was set to 5s.
+consul_raft_snapshot_interval: "30s"
+
+# This controls how many log entries are left in the log store on disk after a snapshot is made.
+# This should only be adjusted when followers cannot catch up to the leader due to a very large snapshot size that and high write throughput causing log truncation before an snapshot can be fully installed.
+# If you need to use this to recover a cluster, consider reducing write throughput or the amount of data stored on Consul as it is likely under a load it is not designed to handle.
+# The default value is 10000 which is suitable for all normal workloads. Added in Consul 1.5.3.
+consul_raft_trailing_logs: "10000"
+
+# This controls how long it takes for a failed node to be completely removed from the cluster.
+# This defaults to 72 hours and it is recommended that this is set to at least double the maximum expected recoverable outage time for a node or network partition.
+# WARNING: Setting this time too low could cause Consul servers to be removed from quorum during an extended node failure or partition, which could complicate recovery of the cluster.
+# The value is a time with a unit suffix, which can be "s", "m", "h" for seconds, minutes, or hours. The value must be >= 8 hours.
+consul_reconnect_timeout: "72h"
+
+# This is the WAN equivalent of the reconnect_timeout parameter, which controls how long it takes for a failed server to be completely removed from the WAN pool.
+# This also defaults to 72 hours, and must be >= 8 hours.
+consul_reconnect_timeout_wan: "72h"
+
+# This flag provides addresses of upstream DNS servers that are used to recursively resolve queries if they are not inside the service domain for Consul.
+# For example, a node can use Consul directly as a DNS server, and if the record is outside of the "consul." domain, the query will be resolved upstream.
+# As of Consul 1.0.1 recursors can be provided as IP addresses or as go-sockaddr templates.
+# IP addresses are resolved in order, and duplicates are ignored.
+consul_recursors: []
+
+# When provided, Consul will ignore a previous leave and attempt to rejoin the cluster when starting.
+# By default, Consul treats leave as a permanent intent and does not attempt to join the cluster again when starting.
+# This flag allows the previous state to be used to rejoin the cluster.
+consul_rejoin_after_leave: false
+#
+consul_retry_join: todo masters
+# Time to wait between join attempts. Defaults to 30s.
+consul_retry_interval: "30s"
+# Address of another wan agent to join upon starting up.
+# This can be specified multiple times to specify multiple WAN agents to join.
+# If Consul is unable to join with any of the specified addresses, agent startup will fail.
+# By default, the agent won't -join-wan any nodes when it starts up.
+consul_retry_join_wan: []
+# Time to wait between -join-wan attempts. Defaults to 30s.
+consul_retry_interval_wan: "30s"
+
+# The minimum allowed session TTL. 
+# This ensures sessions are not created with TTL's shorter than the specified limit.
+# It is recommended to keep this limit at or above the default to encourage clients to send infrequent heartbeats. Defaults to 10s.
+consul_session_ttl_min: "10s"
+
+
+
+TODO https://www.consul.io/docs/agent/options.html#translate_wan_addrs
 
 
 
