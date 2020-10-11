@@ -20,6 +20,16 @@ consul:
     binary_checksum: 2122f0df22ba48bf5a4c6dbacef76826cbdd5fbe46bf1d626618fde78eb6297c
     extra_opts: ''
 
+consul_alt_os_packages:
+  - curl
+  - unzip
+consul_redhat_os_packages:
+  - curl
+  - unzip
+consul_debian_os_packages:
+  - curl
+  - unzip
+
 ### System user and group
 # Параметры создания пользователя
 consul_manage_user: false
@@ -60,7 +70,7 @@ consul_servers: "\
 # This option can be specified multiple times to load multiple directories.
 # Sub-directories of the config directory are not loaded.
 # For more information on the format of the configuration files, see the Configuration Files section.
-consul_conf_dir: "/etc/consul.d/{{ consul_node_role }}"
+consul_conf_dir: "/etc/consul.d/"
 # This is required for all agents.
 # The directory should be durable across reboots.
 # This is especially critical for agents that are running in server mode as they must be able to persist cluster state.
@@ -223,7 +233,7 @@ consul_max_query_time: "600s"
 # On agents in client-mode, this defaults to true and for agents in server-mode, this defaults to false.
 consul_leave_on_terminate: "\
   {% set _consul_leave_on_terminate = '' %}\
-  {% if ( consul_node_role == 'server' or _consul_node_role == 'both') %}\
+  {% if ( consul_node_role == 'server' or consul_node_role == 'both') %}\
     {% set _consul_leave_on_terminate = false %}\
   {% elif consul_node_role == 'client' %}\
     {% set _consul_leave_on_terminate = true %}\
@@ -236,7 +246,7 @@ consul_leave_on_terminate: "\
 # On agents in client-mode, this defaults to false and for agents in server-mode, this defaults to true (i.e. Ctrl-C on a server will keep the server in the cluster and therefore quorum, and Ctrl-C on a client will gracefully leave).
 consul_skip_leave_on_interrupt: "\
 {% set _consul_skip_leave_on_interrupt = '' %}\
-{% if ( consul_node_role == 'server' or _consul_node_role == 'both') %}\
+{% if ( consul_node_role == 'server' or consul_node_role == 'both') %}\
   {% set _consul_skip_leave_on_interrupt = true %}\
 {% elif consul_node_role == 'client' %}\
   {% set _cskip_leave_on_interrupt = false %}\

@@ -10,7 +10,7 @@ server = {{ consul_server | bool | lower }}
 server_name = "{{ consul_server_name }}"
 {% endif %}
 {% if consul_server %}
-bootstrap_expect = "{{ consul_bootstrap_expect }}"
+bootstrap_expect = {{ consul_bootstrap_expect }}
 ui = {{ consul_ui | bool | lower }}
 {% endif %}
 
@@ -59,9 +59,9 @@ default_query_time = "{{ consul_default_query_time }}"
 max_query_time = "{{ consul_max_query_time }}"
 session_ttl_min = "{{ consul_session_ttl_min }}"
 
-raft_snapshot_threshold = "{{ consul_raft_snapshot_threshold }}"
+raft_snapshot_threshold = {{ consul_raft_snapshot_threshold }}
 raft_snapshot_interval = "{{ consul_raft_snapshot_interval }}"
-raft_trailing_logs = "{{ consul_raft_trailing_logs }}"
+raft_trailing_logs = {{ consul_raft_trailing_logs }}
 
 reconnect_timeout = "{{ consul_reconnect_timeout }}"
 reconnect_timeout_wan = "{{ consul_reconnect_timeout_wan }}"
@@ -76,7 +76,7 @@ acl {
     token_ttl = "{{ consul_acl_token_ttl }}"
     down_policy = "{{ consul_acl_down_policy }}"
     default_policy = "{{ consul_acl_default_policy }}"
-    enable_key_list_policy = "{{ consul_acl_enable_key_list_policy }}"
+    enable_key_list_policy = {{ consul_acl_enable_key_list_policy | bool | lower }}
     enable_token_replication = {{ consul_acl_enable_token_replication | bool | lower }}
     enable_token_persistence = {{ consul_acl_enable_token_persistence | bool | lower }}
     tokens {
@@ -102,8 +102,8 @@ acl {
 autopilot {
     cleanup_dead_servers = {{ consul_autopilot_cleanup_dead_servers | bool |lower }}
     last_contact_threshold = "{{ consul_autopilot_last_contact_threshold }}"
-    max_trailing_logs = "{{ consul_autopilot_max_trailing_logs }}"
-{% if consul_autopilot_min_quorum is defined and consul_autopilot_min_quorum | length > 0 %}
+    max_trailing_logs = {{ consul_autopilot_max_trailing_logs }}
+{% if consul_autopilot_min_quorum | length > 0 %}
     min_quorum = "{{ consul_autopilot_min_quorum }}"
 {% endif %}
     server_stabilization_time = "{{ consul_autopilot_server_stabilization_time }}"
@@ -112,7 +112,9 @@ autopilot {
 ## Cache ##
 cache {
     entry_fetch_max_burst = {{ consul_cache_entry_fetch_max_burst }}
-    entry_fetch_rate = "{{ consul_cache_entry_fetch_rate }}"
+{% if consul_cache_entry_fetch_rate | length > 0 %}
+    entry_fetch_rate = {{ consul_cache_entry_fetch_rate | float }}
+{% endif %}
 }
 
 {% if consul_tls_enabled %}
@@ -145,20 +147,24 @@ dns_config {
     allow_stale = {{ consul_dns_allow_stale | bool | lower }}
     max_stale = "{{ consul_dns_max_stale }}"
     node_ttl = "{{ consul_dns_node_ttl }}"
-    service_ttl = "{{ consul_dns_service_ttl }}"
+{% if consul_dns_service_ttl | length > 0 %}
+    service_ttl = {{ consul_dns_service_ttl }}
+{% endif %}
     enable_truncate = {{ consul_dns_enable_truncate | bool |lower }}
     only_passing = {{ consul_dns_only_passing | bool | lower }}
     recursor_timeout = "{{ consul_dns_recursor_timeout }}"
     disable_compression = {{ consul_dns_disable_compression | bool | lower }}
-    a_record_limit = "{{ consul_dns_a_record_limit }}"
+{% if consul_dns_a_record_limit | length > 0 %}
+    a_record_limit = {{ consul_dns_a_record_limit }}
+{% endif %}
     enable_additional_node_meta_txt = {{ consul_dns_enable_additional_node_meta_txt | bool | lower }}
     use_cache = {{ consul_dns_use_cache | bool |lower }}
     cache_max_age = "{{ consul_dns_cache_max_age }}"
     soa {
-        expire = "{{ consul_dns_soa_expire }}"
-        min_ttl = "{{ consul_dns_soa_min_ttl }}"
-        refresh = "{{ consul_dns_soa_refresh }}"
-        retry = "{{ consul_dns_soa_retry }}"
+        expire = {{ consul_dns_soa_expire }}
+        min_ttl = {{ consul_dns_soa_min_ttl }}
+        refresh = {{ consul_dns_soa_refresh }}
+        retry = {{ consul_dns_soa_retry }}
     }
 }
 
@@ -169,16 +175,20 @@ syslog_facility = "{{ consul_syslog_facility }}"
 
 log_file = "{{ consul_log_file }}"
 log_rotate_duration = "{{ consul_log_rotate_duration }}"
-log_rotate_bytes = "{{ consul_log_rotate_bytes }}"
-log_rotate_max_files = "{{ consul_log_rotate_max_files }}"
+log_rotate_bytes = {{ consul_log_rotate_bytes }}
+log_rotate_max_files = {{ consul_log_rotate_max_files }}
 log_level = "{{ consul_log_level }}"
 log_json = {{ consul_log_json | bool | lower }}
 
 ## HTTP config ##
 http_config {
+{% if consul_http_block_endpoints | length > 0 %}
     block_endpoints = [ {{ consul_http_block_endpoints | map("to_json") | join(', ') }} ]
-    allow_write_http_from = [ {{ consul_http_block_endpoints | map("to_json") | join(', ') }} ]
-    use_cache = {{ consul_http_allow_write_http_from | bool | lower }}
+{% endif %}
+{% if consul_http_allow_write_http_from | length > 0 %}
+    allow_write_http_from = [ {{ consul_http_allow_write_http_from | map("to_json") | join(', ') }} ]
+{% endif %}
+    use_cache = {{ consul_http_use_cache | bool | lower }}
     response_headers {
     {% for key, value in consul_http_response_headers.items() %}
         "{{ key }}" = "{{ value }}"
@@ -188,34 +198,36 @@ http_config {
 
 ## Limits ##
 limits {
-    http_max_conns_per_client = "{{ consul_limits_http_max_conns_per_client }}"
+    http_max_conns_per_client = {{ consul_limits_http_max_conns_per_client }}
     https_handshake_timeout = "{{ consul_limits_https_handshake_timeout }}"
     rpc_handshake_timeout = "{{ consul_limits_rpc_handshake_timeout }}"
-    rpc_max_conns_per_client = "{{ consul_limits_rpc_max_conns_per_client }}"
-    rpc_rate = "{{ consul_limits_rpc_rate }}"
-    rpc_max_burst = "{{ consul_limits_rpc_max_burst }}"
-    kv_max_value_size = "{{ consul_limits_kv_max_value_size }}"
-    txn_max_req_len = "{{ consul_limits_txn_max_req_len }}"
+    rpc_max_conns_per_client = {{ consul_limits_rpc_max_conns_per_client }}
+{% if consul_limits_rpc_rate | length > 0 %}
+    rpc_rate = {{ consul_limits_rpc_rate }}
+{% endif %}
+    rpc_max_burst = {{ consul_limits_rpc_max_burst }}
+    kv_max_value_size = {{ consul_limits_kv_max_value_size }}
+    txn_max_req_len = {{ consul_limits_txn_max_req_len }}
 }
 
 ## Performance ##
 performance {
     leave_drain_time = "{{ consul_performance_leave_drain_time }}"
-    raft_multiplier = "{{ consul_performance_raft_multiplier }}"
+    raft_multiplier = {{ consul_performance_raft_multiplier }}
     rpc_hold_timeout = "{{ consul_performance_rpc_hold_timeout }}"
 }
 
 ## Ports ##
 ports {
-    dns = "{{ consul_ports_dns }}"
-    http = "{{ consul_ports_http }}"
-    https = "{{ consul_ports_https }}"
-    grpc = "{{ consul_ports_grpc }}"
-    serf_lan = "{{ consul_ports_serf_lan }}"
-    serf_wan = "{{ consul_ports_serf_wan }}"
-    server = "{{ consul_ports_server }}"
-    sidecar_min_port = "{{ consul_ports_sidecar_min_port }}"
-    sidecar_max_port = "{{ consul_ports_sidecar_max_port }}"
-    expose_min_port = "{{ consul_ports_expose_min_port }}"
-    expose_max_port = "{{ consul_ports_expose_max_port }}"
+    dns = {{ consul_ports_dns }}
+    http = {{ consul_ports_http }}
+    https = {{ consul_ports_https }}
+    grpc = {{ consul_ports_grpc }}
+    serf_lan = {{ consul_ports_serf_lan }}
+    serf_wan = {{ consul_ports_serf_wan }}
+    server = {{ consul_ports_server }}
+    sidecar_min_port = {{ consul_ports_sidecar_min_port }}
+    sidecar_max_port = {{ consul_ports_sidecar_max_port }}
+    expose_min_port = {{ consul_ports_expose_min_port }}
+    expose_max_port = {{ consul_ports_expose_max_port }}
 }

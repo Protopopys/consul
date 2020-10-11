@@ -10,6 +10,30 @@
     filter: ansible_*
   tags: facts
 
+# Устанавливаем пакеты
+- name: CONSUL | OS packages (RedHat)
+  yum:
+    name: "{{ consul_redhat_os_packages }}"
+    state: present
+  when: "ansible_os_family == 'RedHat'"
+  tags: os_packages
+
+# Устанавливаем пакеты
+- name: CONSUL | OS packages (Debian)
+  apt:
+    name: "{{ consul_debian_os_packages }}"
+    state: present
+  when: "ansible_os_family == 'Debian'"
+  tags: os_packages
+
+# Устанавливаем пакеты
+- name: CONSUL | OS packages (Altlinux)
+  apt_rpm:
+    name: "{{ consul_alt_os_packages | join(' ') }}"
+    state: present
+  when: "ansible_os_family == 'Altlinux'"
+  tags: os_packages
+
 # Создаем группу
 # Если:
 ## Группа не root

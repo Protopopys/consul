@@ -3,11 +3,76 @@ dependency:
   name: galaxy
 driver:
   name: docker
+lint: |
+  set -e
+  yamllint .
+  ansible-lint
+
+verifier:
+  name: testinfra
+
 platforms:
-  - name: instance
-    image: docker.io/pycontribs/centos:8
-    pre_build_image: true
+  - name: instance1.consul
+    groups:
+      - consul
+    networks:
+      - name: consul
+    image: protopopys/systemd-centos:7
+    override_command: False
+    tty: True
+    privileged: True
+    security_opts:
+      - seccomp=unconfigured
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    tmpfs:
+      - /tmp
+      - /run/lock
+
+  - name: instance2.consul
+    groups:
+      - consul
+    networks:
+      - name: consul
+    image: protopopys/systemd-centos:7
+    override_command: False
+    tty: True
+    privileged: True
+    security_opts:
+      - seccomp=unconfigured
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    tmpfs:
+      - /tmp
+      - /run/lock
+
+  - name: instance3.consul
+    hostname: instance3
+    groups:
+      - consul
+    networks:
+      - name: consul
+    image: protopopys/systemd-centos:7
+    override_command: False
+    tty: True
+    privileged: True
+    security_opts:
+      - seccomp=unconfigured
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    tmpfs:
+      - /tmp
+      - /run/lock
+
 provisioner:
   name: ansible
-verifier:
-  name: ansible
+  inventory:
+    host_vars:
+      instance1.consul:
+        consul_node_role: both
+      instance2.consul:
+        consul_node_role: both
+      instance3.consul:
+        consul_node_role: both
+  playbooks:
+    converge: ${MOLECULE_PLAYBOOK:-converge.yml}

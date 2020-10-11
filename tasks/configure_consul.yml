@@ -2,24 +2,36 @@
 # Создаем папки на удаленной машине
 - name: CONSUL | Creating conf directory
   file:
-    path: "{{ item }}"
+    path: "{{ consul_conf_dir }}"
     state: directory
     owner: "{{ consul_user }}"
     group: "{{ consul_group }}"
     mode: "0755"
-  loop:
-    - "{{ consul.data_dir }}"
-    - "{{ consul.conf_dir }}"
+  tags:
+    - directory
+    - config_file
+    - configs
+
+# Создаем папки на удаленной машине
+- name: CONSUL | Creating conf directory
+  file:
+    path: "{{ consul_data_dir }}"
+    state: directory
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: "0700"
+  tags:
+    - directory
 
 # Создаем конфигурационный файл сервиса
 - name: CONSUL | Creating configuration file
   template:
-    src: "config.json.j2"
-    dest: "{{ consul.conf_dir }}/config.json"
-    owner: "{{ consul.user }}"
-    group: "{{ consul.group }}"
-    mode: '0644'
-  notify: CONSUL | Restart consul
+    src: "consul.hcl.j2"
+    dest: "{{ consul_conf_dir }}/consul.hcl"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: "0644"
+  register: consul_config_file
   tags:
     - config_file
     - configs
@@ -31,28 +43,34 @@
     dest: "/etc/systemd/system/consul.service"
     owner: root
     group: root
-    mode: '0644'
-  notify:
-    - CONSUL | Reload systemd
-    - CONSUL | Restart consul
+    mode: "0644"
+  register: consul_systemd_file
   tags:
     - systemd_config_file
     - configs
 
-# Запускаем принудительное исполнение handlers    
-- name: CONSUL | Flush handlers
-  meta: flush_handlers
+# Перезагружаем сервис
+- name: CONSUL | Restart consul
+  systemd:
+    name: consul
+    state: restarted
+    daemon_reload: true
+  when:
+    - "'consul.service' in services"
+    - consul_config_file.changed or
+      consul_systemd_file.changed
 
 # Убеждаемся что сервис запущен и добавлен в автозапуск
 - name: CONSUL | Ensure consul is started and enabled a boot
-  service:
+  systemd:
     name: consul
-    state: "{{ consul.state }}"
-    enabled: "{{ consul.enabled }}"
+    state: "{{ consul_state }}"
+    enabled: "{{ consul_enabled }}"
 
 # Создаем symlink для бинарного файлы consul
 - name: CONSUL | Create symlink for consul executable
   file:
-    src: "{{ consul_destination_path }}/consul"
+    src: "{{ consul_bin_dir }}/consul"
     dest: /usr/bin/consul
     state: link
+  when: "consul_bin_dir != '/usr/bin'"

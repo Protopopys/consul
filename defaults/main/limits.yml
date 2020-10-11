@@ -34,7 +34,7 @@ consul_limits_rpc_max_conns_per_client: "100"
 
 # Configures the RPC rate limiter on Consul clients by setting the maximum request rate that this agent is allowed to make for RPC requests to Consul servers, in requests per second.
 # Defaults to infinite, which disables rate limiting.
-consul_limits_rpc_rate: "infinite"
+consul_limits_rpc_rate: ""
 
 # The size of the token bucket used to recharge the RPC rate limiter on Consul clients.
 # Defaults to 1000 tokens, and each token is good for a single RPC call to a Consul server.
@@ -45,9 +45,9 @@ consul_limits_rpc_max_burst: "1000"
 # This limit defaults to raft's suggested max size (512KB).
 # Note that tuning these improperly can cause Consul to fail in unexpected ways, it may potentially affect leadership stability and prevent timely heartbeat signals by increasing RPC IO duration.
 # This option affects the txn endpoint too, but Consul 1.7.2 introduced txn_max_req_len which is the preferred way to set the limit for the txn endpoint. If both limits are set, the higher one takes precedence.
-consul_limits_kv_max_value_size: "512KB"
+consul_limits_kv_max_value_size: "524288"
 
 # (Advanced) Configures the maximum number of bytes for a transaction request body to the /v1/txn endpoint.
 # This limit defaults to raft's suggested max size (512KB).
 # Note that tuning these improperly can cause Consul to fail in unexpected ways, it may potentially affect leadership stability and prevent timely heartbeat signals by increasing RPC IO duration.
-consul_limits_txn_max_req_len: "512KB"
+consul_limits_txn_max_req_len: "524288"
