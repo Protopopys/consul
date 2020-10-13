@@ -1,7 +1,4 @@
 ---
-#- debug:
-#    msg: "{{ consul_servers }}"
-#- meta: end_play
 - name: CONSUL | Import bootstrap os task
   import_tasks: "bootstrap_system.yml"
   tags:

@@ -55,8 +55,11 @@ disable_keyring_file = {{ consul_disable_keyring_file | bool | lower }}
 leave_on_terminate = {{ consul_leave_on_terminate | bool | lower }}
 skip_leave_on_interrupt = {{ consul_skip_leave_on_interrupt | bool | lower }}
 
+{% if consul_version > 'v1.6.2' %}
 default_query_time = "{{ consul_default_query_time }}"
 max_query_time = "{{ consul_max_query_time }}"
+{% endif %}
+
 session_ttl_min = "{{ consul_session_ttl_min }}"
 
 raft_snapshot_threshold = {{ consul_raft_snapshot_threshold }}
@@ -109,6 +112,7 @@ autopilot {
     server_stabilization_time = "{{ consul_autopilot_server_stabilization_time }}"
 }
 
+{% if consul_version >= 'v1.8.1' %}
 ## Cache ##
 cache {
     entry_fetch_max_burst = {{ consul_cache_entry_fetch_max_burst }}
@@ -116,6 +120,7 @@ cache {
     entry_fetch_rate = {{ consul_cache_entry_fetch_rate | float }}
 {% endif %}
 }
+{% endif %}
 
 {% if consul_tls_enabled %}
 ## TLS ##
@@ -178,8 +183,9 @@ log_rotate_duration = "{{ consul_log_rotate_duration }}"
 log_rotate_bytes = {{ consul_log_rotate_bytes }}
 log_rotate_max_files = {{ consul_log_rotate_max_files }}
 log_level = "{{ consul_log_level }}"
+{% if consul_version > 'v1.6.2' %}
 log_json = {{ consul_log_json | bool | lower }}
-
+{% endif %}
 ## HTTP config ##
 http_config {
 {% if consul_http_block_endpoints | length > 0 %}
@@ -188,7 +194,9 @@ http_config {
 {% if consul_http_allow_write_http_from | length > 0 %}
     allow_write_http_from = [ {{ consul_http_allow_write_http_from | map("to_json") | join(', ') }} ]
 {% endif %}
+{% if consul_version >= 'v1.7.4' %}
     use_cache = {{ consul_http_use_cache | bool | lower }}
+{% endif %}
     response_headers {
     {% for key, value in consul_http_response_headers.items() %}
         "{{ key }}" = "{{ value }}"
@@ -198,16 +206,18 @@ http_config {
 
 ## Limits ##
 limits {
+{% if consul_version > 'v1.6.2' %}
     http_max_conns_per_client = {{ consul_limits_http_max_conns_per_client }}
     https_handshake_timeout = "{{ consul_limits_https_handshake_timeout }}"
     rpc_handshake_timeout = "{{ consul_limits_rpc_handshake_timeout }}"
     rpc_max_conns_per_client = {{ consul_limits_rpc_max_conns_per_client }}
+    txn_max_req_len = {{ consul_limits_txn_max_req_len }}
+{% endif %}
 {% if consul_limits_rpc_rate | length > 0 %}
     rpc_rate = {{ consul_limits_rpc_rate }}
 {% endif %}
     rpc_max_burst = {{ consul_limits_rpc_max_burst }}
     kv_max_value_size = {{ consul_limits_kv_max_value_size }}
-    txn_max_req_len = {{ consul_limits_txn_max_req_len }}
 }
 
 ## Performance ##
