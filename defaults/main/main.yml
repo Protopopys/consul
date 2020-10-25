@@ -6,44 +6,6 @@ downloader_source_folder: ~/DISTR
 # Папка в которую будет осуществлена загрузка установочного архива
 distribution_path: "/opt/DISTR"
 
-### Consul versions ###
-# Устанавливаемая версия Consul
-consul_version: v1.6.2
-# Distributives
-consul:
-  v1.6.2:
-    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
-    source_url: https://releases.hashicorp.com/consul/1.6.2/consul_1.6.2_linux_amd64.zip
-    # Контрольная сумма скачаемого архива
-    checksum_algorithm: "sha256"
-    checksum: 78d127e5b8edd310c3f9f89487fb833a5c7bcb4e09cb731a4d39100fc53b38be
-    binary_checksum: 2122f0df22ba48bf5a4c6dbacef76826cbdd5fbe46bf1d626618fde78eb6297c
-    extra_opts: ''
-  v1.6.9:
-    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
-    source_url: https://releases.hashicorp.com/consul/1.6.9/consul_1.6.9_linux_amd64.zip
-    # Контрольная сумма скачаемого архива
-    checksum_algorithm: "sha256"
-    checksum: 4d113dd1166f1461c9c27b40f928f4dac52bea0199e4529152cc6fd3894148f7
-    binary_checksum: 684deb17921026171bb0b5cbd294e3a28cad3e33014d4313740a47efbd216867
-    extra_opts: ''
-  v1.7.8:
-    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
-    source_url: https://releases.hashicorp.com/consul/1.7.8/consul_1.7.8_linux_amd64.zip
-    # Контрольная сумма скачаемого архива
-    checksum_algorithm: "sha256"
-    checksum: aa5a7c5ed5e52cca10affc612853bc79d361132a5458ad7ac6eb9d1520de7e03
-    binary_checksum: c4d684701687a97ebc712764b35d34dec36f96e6e111500a47ab03ab08a9ce97
-    extra_opts: ''
-  v1.8.4:
-    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
-    source_url: https://releases.hashicorp.com/consul/1.7.8/consul_1.7.8_linux_amd64.zip
-    # Контрольная сумма скачаемого архива
-    checksum_algorithm: "sha256"
-    checksum: 0d74525ee101254f1cca436356e8aee51247d460b56fc2b4f7faef8a6853141f
-    binary_checksum: 7906cedf6ebd75368386b183ad913972db654542107f1abac9b0a73c19835901
-    extra_opts: ''
-
 consul_alt_os_packages:
   - curl
   - unzip
@@ -77,16 +39,6 @@ consul_node_role: both
 ### Servers
 consul_group_name: "consul"
 
-consul_servers: "\
-  {% set _consul_master_nodes = [] %}\
-  {% for host in groups[consul_group_name] %}\
-    {% set _consul_node_role = hostvars[host]['consul_node_role'] | default('client') %}\
-    {% if ( _consul_node_role == 'server' or _consul_node_role == 'both') %}\
-      {{ _consul_master_nodes.append(hostvars[host].advertise_ip | default(hostvars[host].ansible_default_ipv4.address)) }}\
-    {% endif %}\
-  {% endfor %}\
-  {{ _consul_master_nodes }}"
-
 ## Directories ##
 # A directory of configuration files to load.
 # Consul will load all files in this directory with the suffix ".json" or ".hcl".
@@ -105,7 +57,7 @@ consul_data_dir: "/DATA/consul"
 consul_bin_dir: "/opt/consul/{{ consul_version }}"
 
 ### General Parameters 
-#TODO auto_config, auto_encrypt, connect - https://www.consul.io/docs/agent/options.html#connect, config_entries - https://www.consul.io/docs/agent/options.html#config_entries / gossip_lan - https://www.consul.io/docs/agent/options.html#gossip_lan / gossip_wan - https://www.consul.io/docs/agent/options.html#gossip_wan / telemetry https://www.consul.io/docs/agent/options.html#telemetry / unix_sockets - https://www.consul.io/docs/agent/options.html#unix_sockets / watches - https://www.consul.io/docs/agent/options.html#watches
+#TODO advertise_addr - https://www.consul.io/docs/agent/options.html#advertise_addr, auto_config, auto_encrypt, connect - https://www.consul.io/docs/agent/options.html#connect, config_entries - https://www.consul.io/docs/agent/options.html#config_entries / gossip_lan - https://www.consul.io/docs/agent/options.html#gossip_lan / gossip_wan - https://www.consul.io/docs/agent/options.html#gossip_wan / telemetry https://www.consul.io/docs/agent/options.html#telemetry / unix_sockets - https://www.consul.io/docs/agent/options.html#unix_sockets / watches - https://www.consul.io/docs/agent/options.html#watches
 
 # The name of this node in the cluster.
 # This must be unique within the cluster.
@@ -139,7 +91,7 @@ consul_server_name: ""
 # Either this value should not be provided or the value must agree with other servers in the cluster.
 # When provided, Consul waits until the specified number of servers are available and then bootstraps the cluster.
 # This allows an initial leader to be elected automatically. 
-consul_bootstrap_expect: "{{ consul_servers | count or 3 }}"
+consul_bootstrap_expect: "{{ consul_servers_serf | count or 3 }}"
 
 # Enables the built-in web UI server and the required HTTP routes.
 # This eliminates the need to maintain the Consul web UI files separately from the binary.
@@ -162,7 +114,16 @@ consul_datacenter: "dc1"
 # If Consul is running on the non-default Serf LAN port, this must be specified as well.
 # IPv6 must use the "bracketed" syntax.
 # If multiple values are given, they are tried and retried in the order listed until the first succeeds.
-consul_retry_join: "{{ consul_servers }}"
+consul_servers_serf: "\
+  {% set _consul_master_nodes = [] %}\
+  {% for host in groups[consul_group_name] %}\
+    {% set _consul_node_role = hostvars[host]['consul_node_role'] | default('client') %}\
+    {% if ( _consul_node_role == 'server' or _consul_node_role == 'both') %}\
+      {{ _consul_master_nodes.append( (hostvars[host].advertise_ip|default(hostvars[host].ansible_default_ipv4.address)|string) + ':' + (hostvars[host].consul_ports_serf_lan|default('8301')|string) ) }}\
+    {% endif %}\
+  {% endfor %}\
+  {{ _consul_master_nodes }}"
+consul_retry_join: "{{ consul_servers_serf }}"
 
 # When provided, Consul will ignore a previous leave and attempt to rejoin the cluster when starting.
 # By default, Consul treats leave as a permanent intent and does not attempt to join the cluster again when starting.

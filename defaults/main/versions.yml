@@ -1,0 +1,46 @@
+---
+### Consul versions ###
+# Устанавливаемая версия Consul
+consul_version: v1.8.5
+# Distributives
+consul:
+  v1.6.2:
+    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
+    source_url: https://releases.hashicorp.com/consul/1.6.2/consul_1.6.2_linux_amd64.zip
+    # Контрольная сумма скачаемого архива
+    checksum_algorithm: "sha256"
+    checksum: 78d127e5b8edd310c3f9f89487fb833a5c7bcb4e09cb731a4d39100fc53b38be
+    binary_checksum: 2122f0df22ba48bf5a4c6dbacef76826cbdd5fbe46bf1d626618fde78eb6297c
+    extra_opts: ''
+  v1.6.9:
+    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
+    source_url: https://releases.hashicorp.com/consul/1.6.9/consul_1.6.9_linux_amd64.zip
+    # Контрольная сумма скачаемого архива
+    checksum_algorithm: "sha256"
+    checksum: 4d113dd1166f1461c9c27b40f928f4dac52bea0199e4529152cc6fd3894148f7
+    binary_checksum: 684deb17921026171bb0b5cbd294e3a28cad3e33014d4313740a47efbd216867
+    extra_opts: ''
+  v1.7.8:
+    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
+    source_url: https://releases.hashicorp.com/consul/1.7.8/consul_1.7.8_linux_amd64.zip
+    # Контрольная сумма скачаемого архива
+    checksum_algorithm: "sha256"
+    checksum: aa5a7c5ed5e52cca10affc612853bc79d361132a5458ad7ac6eb9d1520de7e03
+    binary_checksum: c4d684701687a97ebc712764b35d34dec36f96e6e111500a47ab03ab08a9ce97
+    extra_opts: ''
+  v1.8.4:
+    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
+    source_url: https://releases.hashicorp.com/consul/1.8.4/consul_1.8.4_linux_amd64.zip
+    # Контрольная сумма скачаемого архива
+    checksum_algorithm: "sha256"
+    checksum: 0d74525ee101254f1cca436356e8aee51247d460b56fc2b4f7faef8a6853141f
+    binary_checksum: 7906cedf6ebd75368386b183ad913972db654542107f1abac9b0a73c19835901
+    extra_opts: ''
+  v1.8.5:
+    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
+    source_url: https://releases.hashicorp.com/consul/1.8.5/consul_1.8.5_linux_amd64.zip
+    # Контрольная сумма скачаемого архива
+    checksum_algorithm: "sha256"
+    checksum: 94ab38e6221d3da393d0bbdf19cc524051253a75db078c31e249dad2c497ad46
+    binary_checksum: 71c535c1be8bab8c59efdedd2b3de1c8fe85a3852f5fca1d13990aa4a2942a7f
+    extra_opts: ''

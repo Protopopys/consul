@@ -74,3 +74,7 @@
     dest: /usr/bin/consul
     state: link
   when: "consul_bin_dir != '/usr/bin'"
+
+- name: CONSUL | Print Consul servers addresses with serf port
+  debug:
+    msg: "{{ consul_servers_serf }}"
