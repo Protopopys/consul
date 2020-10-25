@@ -1,0 +1,70 @@
+---
+## TLS ##
+# Specifies if the TLS should be activated.
+consul_tls_enabled: false
+
+# When set, uses a subset of the agent's TLS configuration (key_file, cert_file, ca_file, ca_path, and server_name) to set up the client for HTTP or gRPC health checks.
+# This allows services requiring 2-way TLS to be checked using the agent's credentials.
+# This was added in Consul 1.0.1 and defaults to false.
+consul_enable_agent_tls_for_checks: false
+
+# This provides a file path to a PEM-encoded certificate authority.
+# The certificate authority is used to check the authenticity of client and server connections with the appropriate verify_incoming or verify_outgoing flags.
+consul_ca_file: ""
+
+# This provides a path to a directory of PEM-encoded certificate authority files.
+# These certificate authorities are used to check the authenticity of client and server connections with the appropriate verify_incoming or verify_outgoing flags.
+consul_ca_path: ""
+
+# This provides a file path to a PEM-encoded certificate.
+# The certificate is provided to clients or servers to verify the agent's authenticity.
+# It must be provided along with key_file.
+consul_cert_file: ""
+
+# This provides a the file path to a PEM-encoded private key.
+# The key is used with the certificate to verify the agent's authenticity.
+# This must be provided along with cert_file.
+consul_key_file: ""
+
+# Added in Consul 0.7.4, this specifies the minimum supported version of TLS. Accepted values are "tls10", "tls11", "tls12", or "tls13". This defaults to "tls12". WARNING: TLS 1.1 and lower are generally considered less secure; avoid using these if possible.
+consul_tls_min_version: "tls12"
+
+# Added in Consul 0.8.2, this specifies the list of supported ciphersuites as a comma-separated-list.
+# The list of all supported ciphersuites is available through this search.
+consul_tls_cipher_suites: ""
+
+# Added in Consul 0.8.2, this will cause Consul to prefer the server's ciphersuite over the client ciphersuites.
+consul_tls_prefer_server_cipher_suites: true
+
+# If set to true, Consul requires that all incoming connections make use of TLS and that the client provides a certificate signed by a Certificate Authority from the ca_file or ca_path.
+# This applies to both server RPC and to the HTTPS API.
+# By default, this is false, and Consul will not enforce the use of TLS or verify a client's authenticity.
+# Turning on verify_incoming on consul clients protects the HTTPS endpoint, by ensuring that the certificate that is presented by a 3rd party tool to the HTTPS endpoint was created by the CA that the consul client was setup with.
+# If the UI is served, the same checks are performed.
+consul_verify_incoming: false
+
+# If set to true, Consul requires that all incoming RPC connections make use of TLS and that the client provides a certificate signed by a Certificate Authority from the ca_file or ca_path.
+# By default, this is false, and Consul will not enforce the use of TLS or verify a client's authenticity.
+consul_verify_incoming_rpc: false
+
+# If set to true, Consul requires that all incoming HTTPS connections make use of TLS and that the client provides a certificate signed by a Certificate Authority from the ca_file or ca_path.
+# By default, this is false, and Consul will not enforce the use of TLS or verify a client's authenticity.
+# To enable the HTTPS API, you must define an HTTPS port via the ports configuration.
+# By default, HTTPS is disabled.
+consul_verify_incoming_https: false
+
+# If set to true, Consul requires that all outgoing connections from this agent make use of TLS and that the server provides a certificate that is signed by a Certificate Authority from the ca_file or ca_path.
+# By default, this is false, and Consul will not make use of TLS for outgoing connections.
+# This applies to clients and servers as both will make outgoing connections.
+# Security Note:
+    # Note that servers that specify verify_outgoing = true will always talk to other servers over TLS, but they still accept non-TLS connections to allow for a transition of all clients to TLS.
+    # Currently the only way to enforce that no client can communicate with a server unencrypted is to also enable verify_incoming which requires client certificates too.
+consul_verify_outgoing: false
+
+# If set to true, Consul verifies for all outgoing TLS connections that the TLS certificate presented by the servers matches server.<datacenter>.<domain> hostname.
+# By default, this is false, and Consul does not verify the hostname of the certificate, only that it is signed by a trusted CA. This setting is critical to prevent a compromised client from being restarted as a server and having all cluster state including all ACL tokens and Connect CA root keys replicated to it.
+# This is new in 0.5.1.
+# Security Note:
+    # From versions 0.5.1 to 1.4.0, due to a bug, setting this flag alone does not imply verify_outgoing and leaves client to server and server to server RPCs unencrypted despite the documentation stating otherwise.
+    # See CVE-2018-19653 for more details. For those versions you must also set verify_outgoing = true to ensure encrypted RPC connections.
+consul_verify_server_hostname: false

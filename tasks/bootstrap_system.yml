@@ -1,0 +1,62 @@
+---
+# Получаем информацию о сервисах на удаленной машине
+- name: CONSUL | Get service facts
+  service_facts: {}
+  tags: facts
+
+# Получаем информацию об удаленной машине
+- name: CONSUL | Getting facts
+  setup:
+    filter: ansible_*
+  tags: facts
+
+# Устанавливаем пакеты
+- name: CONSUL | OS packages (RedHat)
+  yum:
+    name: "{{ consul_redhat_os_packages }}"
+    state: present
+  when: "ansible_os_family == 'RedHat'"
+  tags: os_packages
+
+# Устанавливаем пакеты
+- name: CONSUL | OS packages (Debian)
+  apt:
+    name: "{{ consul_debian_os_packages }}"
+    state: present
+  when: "ansible_os_family == 'Debian'"
+  tags: os_packages
+
+# Устанавливаем пакеты
+- name: CONSUL | OS packages (Altlinux)
+  apt_rpm:
+    name: "{{ consul_alt_os_packages | join(' ') }}"
+    state: present
+  when: "ansible_os_family == 'Altlinux'"
+  tags: os_packages
+
+# Создаем группу
+# Если:
+## Группа не root
+- name: CONSUL | Create user group
+  group:
+    name: "{{ consul_group }}"
+  when:
+    - consul_group != "root"
+    - consul_manage_group|default(false)
+  tags: os_group
+
+# Создаем пользователя
+# Если:
+## Пользователь не root
+- name: CONSUL | Create user
+  user:
+    name: "{{ consul_user }}"
+    groups: "{{ consul_group }}"
+    generate_ssh_key: "{{ consul_ssh_key }}"
+    shell: "{{ consul_shell }}"
+    system: "{{ consul_system }}"
+    create_home: false
+  when:
+    - consul_user != "root"
+    - consul_manage_user|default(false)
+  tags: os_user

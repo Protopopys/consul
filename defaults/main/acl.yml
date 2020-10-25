@@ -1,0 +1,84 @@
+---
+## ACLs ##
+# Enables ACLs.
+consul_acl_enabled: false 
+
+# Used to control Time-To-Live caching of ACL policies.
+# By default, this is 30 seconds.
+# This setting has a major performance impact: reducing it will cause more frequent refreshes while increasing it reduces the number of refreshes.
+# However, because the caches are not actively invalidated, ACL policy may be stale up to the TTL value.
+consul_acl_policy_ttl: "30s"
+
+# Used to control Time-To-Live caching of ACL roles.
+# By default, this is 30 seconds.
+# This setting has a major performance impact: reducing it will cause more frequent refreshes while increasing it reduces the number of refreshes.
+# However, because the caches are not actively invalidated, ACL role may be stale up to the TTL value.
+consul_acl_role_ttl: "30s"
+
+# Used to control Time-To-Live caching of ACL tokens.
+# By default, this is 30 seconds.
+# This setting has a major performance impact: reducing it will cause more frequent refreshes while increasing it reduces the number of refreshes.
+# However, because the caches are not actively invalidated, ACL token may be stale up to the TTL value.
+consul_acl_token_ttl: "30s"
+
+# Either "allow", "deny", "extend-cache" or "async-cache"; "extend-cache" is the default.
+# In the case that a policy or token cannot be read from the primary_datacenter or leader node, the down policy is applied.
+# In "allow" mode, all actions are permitted, "deny" restricts all operations, and "extend-cache" allows any cached objects to be used, ignoring their TTL values.
+# If a non-cached ACL is used, "extend-cache" acts like "deny". The value "async-cache" acts the same way as "extend-cache" but performs updates asynchronously when ACL is present but its TTL is expired, thus, if latency is bad between the primary and secondary datacenters, latency of operations is not impacted.
+consul_acl_down_policy: "extend-cache"
+
+# Either "allow" or "deny"; defaults to "allow" but this will be changed in a future major release.
+# The default policy controls the behavior of a token when there is no matching rule.
+# In "allow" mode, ACLs are a denylist: any operation not specifically prohibited is allowed.
+# In "deny" mode, ACLs are an allowlist: any operation not specifically allowed is blocked.
+# Note: this will not take effect until you've enabled ACLs.
+consul_acl_default_policy: "allow"
+
+# Either "enabled" or "disabled", defaults to "disabled".
+# When enabled, the list permission will be required on the prefix being recursively read from the KV store.
+# Regardless of being enabled, the full set of KV entries under the prefix will be filtered to remove any entries that the request's ACL token does not grant at least read permissions.
+# This option is only available in Consul 1.0 and newer.
+consul_acl_enable_key_list_policy: false
+
+# By default secondary Consul datacenters will perform replication of only ACL policies and roles.
+# Setting this configuration will will enable ACL token replication and allow for the creation of both local tokens and auth methods in connected secondary datacenters.
+# Warning: When enabling ACL token replication on the secondary datacenter, global tokens already present in the secondary datacenter will be lost.
+# For production environments, consider configuring ACL replication in your initial datacenter bootstrapping process.
+consul_acl_enable_token_replication: false
+
+# Either true or false. When true tokens set using the API will be persisted to disk and reloaded when an agent restarts.
+consul_acl_enable_token_persistence: true
+
+## ACLs Tokens ##
+# Only used for servers in the primary_datacenter.
+# This token will be created with management-level permissions if it does not exist.
+# It allows operators to bootstrap the ACL system with a token Secret ID that is well-known.
+# The master token is only installed when a server acquires cluster leadership.
+# If you would like to install or change the acl_master_token, set the new value for master in the configuration for all servers.
+# Once this is done, restart the current leader to force a leader election.
+# If the master token is not supplied, then the servers do not create a master token.
+# When you provide a value, it should be a UUID.
+# To maintain backwards compatibility and an upgrade path this restriction is not currently enforced but will be in a future major Consul release.
+consul_acl_tokens_master: ""
+
+# When provided, the agent will use this token when making requests to the Consul servers.
+# Clients can override this token on a per-request basis by providing the "?token" query parameter.
+# When not provided, the empty token, which maps to the 'anonymous' ACL token, is used.
+consul_acl_tokens_default: ""
+
+# Used for clients and servers to perform internal operations.
+# If this isn't specified, then the default will be used.
+# This token must at least have write access to the node name it will register as in order to set any of the node-level information in the catalog such as metadata, or the node's tagged addresses.
+consul_acl_tokens_agent: ""
+
+# Used to access agent endpoints that require agent read or write privileges, or node read privileges, even if Consul servers aren't present to validate any tokens.
+# This should only be used by operators during outages, regular ACL tokens should normally be used by applications.
+consul_acl_tokens_agent_master: ""
+
+# The ACL token used to authorize secondary datacenters with the primary datacenter for replication operations.
+# This token is required for servers outside the primary_datacenter when ACLs are enabled.
+# This token may be provided later using the agent token API on each server.
+# This token must have at least "read" permissions on ACL data but if ACL token replication is enabled then it must have "write" permissions.
+# This also enables Connect replication, for which the token will require both operator "write" and intention "read" permissions for replicating CA and Intention data.
+# Warning: When enabling ACL token replication on the secondary datacenter, policies and roles already present in the secondary datacenter will be lost. For production environments, consider configuring ACL replication in your initial datacenter bootstrapping process.
+consul_acl_tokens_replication: ""

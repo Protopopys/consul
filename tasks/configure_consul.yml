@@ -1,0 +1,80 @@
+---
+# Создаем папки на удаленной машине
+- name: CONSUL | Creating conf directory
+  file:
+    path: "{{ consul_conf_dir }}"
+    state: directory
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: "0755"
+  tags:
+    - directory
+    - config_file
+    - configs
+
+# Создаем папки на удаленной машине
+- name: CONSUL | Creating conf directory
+  file:
+    path: "{{ consul_data_dir }}"
+    state: directory
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: "0700"
+  tags:
+    - directory
+
+# Создаем конфигурационный файл сервиса
+- name: CONSUL | Creating configuration file
+  template:
+    src: "consul.hcl.j2"
+    dest: "{{ consul_conf_dir }}/consul.hcl"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    mode: "0644"
+  register: consul_config_file
+  tags:
+    - config_file
+    - configs
+
+# Создаем конфигурационный файл systemd
+- name: CONSUL | Creating systemd config file
+  template:
+    src: "systemd.service.j2"
+    dest: "/etc/systemd/system/consul.service"
+    owner: root
+    group: root
+    mode: "0644"
+  register: consul_systemd_file
+  tags:
+    - systemd_config_file
+    - configs
+
+# Перезагружаем сервис
+- name: CONSUL | Restart consul
+  systemd:
+    name: consul
+    state: restarted
+    daemon_reload: true
+  when:
+    - "'consul.service' in services"
+    - consul_config_file.changed or
+      consul_systemd_file.changed
+
+# Убеждаемся что сервис запущен и добавлен в автозапуск
+- name: CONSUL | Ensure consul is started and enabled a boot
+  systemd:
+    name: consul
+    state: "{{ consul_state }}"
+    enabled: "{{ consul_enabled }}"
+
+# Создаем symlink для бинарного файлы consul
+- name: CONSUL | Create symlink for consul executable
+  file:
+    src: "{{ consul_bin_dir }}/consul"
+    dest: /usr/bin/consul
+    state: link
+  when: "consul_bin_dir != '/usr/bin'"
+
+- name: CONSUL | Print Consul servers addresses with serf port
+  debug:
+    msg: "{{ consul_servers_serf }}"

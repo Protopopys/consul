@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include consul role"
+      include_role:
+        name: "consul"
+      vars:
+        consul_client_addr: "0.0.0.0"

@@ -1,0 +1,42 @@
+---
+## Loging and debug ##
+# When set, enables some additional debugging features.
+# Currently, this is only used to access runtime profiling HTTP endpoints, which are available with an operator:read ACL regardless of the value of enable_debug.
+consul_enable_debug: false
+
+# This flag enables logging to syslog.
+# This is only supported on Linux and OSX. It will result in an error if provided on Windows.
+consul_enable_syslog: false
+
+# When enable_syslog is provided, this controls to which facility messages are sent. By default, LOCAL0 will be used.
+consul_syslog_facility: "LOCAL0"
+
+# Writes all the Consul agent log messages to a file.
+# This value is used as a prefix for the log file name.
+# The current timestamp is appended to the file name.
+# If the value ends in a path separator, consul- will be appened to the value. If the file name is missing an extension, .log is appended.
+# For example, setting log-file to /var/log/ would result in a log file path of /var/log/consul-{timestamp}.log. log-file can be combined with -log-rotate-bytes and -log-rotate-duration for a fine-grained log rotation experience.
+consul_log_file: "/var/log/consul-{timestamp}.log"
+
+# To specify the maximum duration a log should be written to before it needs to be rotated.
+# Must be a duration value such as 30s. Defaults to 24h.
+consul_log_rotate_duration: "24h"
+
+# To specify the number of bytes that should be written to a log before it needs to be rotated.
+# Unless specified, there is no limit to the number of bytes that can be written to a log file.
+# Set to 20971520 = 20Mb
+consul_log_rotate_bytes: "20971520"
+
+# To specify the maximum number of older log file archives to keep.
+# Defaults to 0 (no files are ever deleted).
+# Set to -1 to discard old log files when a new one is created.
+consul_log_rotate_max_files: "5"
+
+# The level of logging to show after the Consul agent has started. This defaults to "info".
+# The available log levels are "trace", "debug", "info", "warn", and "err".
+# You can always connect to an agent via consul monitor and use any log level.
+# Also, the log level can be changed during a config reload.
+consul_log_level: "warn"
+
+# This flag enables the agent to output logs in a JSON format. By default this is false.
+consul_log_json: false
