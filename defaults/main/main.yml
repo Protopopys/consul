@@ -46,7 +46,7 @@ consul_group_name: "consul"
 # This option can be specified multiple times to load multiple directories.
 # Sub-directories of the config directory are not loaded.
 # For more information on the format of the configuration files, see the Configuration Files section.
-consul_conf_dir: "/etc/consul.d/"
+consul_conf_dir: "/etc/consul.d"
 # This is required for all agents.
 # The directory should be durable across reboots.
 # This is especially critical for agents that are running in server mode as they must be able to persist cluster state.

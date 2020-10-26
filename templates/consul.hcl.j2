@@ -47,7 +47,7 @@ discovery_max_stale = "{{ consul_discovery_max_stale }}"
 
 enable_local_script_checks = {{ consul_enable_local_script_checks | bool | lower }}
 {% if consul_encrypt is defined and consul_encrypt | length > 0 %}
-encrypt = {{ consul_encrypt }}
+encrypt = "{{ consul_encrypt }}"
 {% endif %}
 encrypt_verify_incoming = {{ consul_encrypt_verify_incoming | bool | lower }}
 encrypt_verify_outgoing = {{ consul_encrypt_verify_outgoing | bool | lower }}
@@ -198,9 +198,9 @@ http_config {
     use_cache = {{ consul_http_use_cache | bool | lower }}
 {% endif %}
     response_headers {
-    {% for key, value in consul_http_response_headers.items() %}
+{% for key, value in consul_http_response_headers.items() %}
         "{{ key }}" = "{{ value }}"
-    {% endfor %}
+{% endfor %}
     }
 }
 
