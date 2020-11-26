@@ -1,7 +1,7 @@
 ---
 ### Consul versions ###
 # Устанавливаемая версия Consul
-consul_version: v1.8.5
+consul_version: v1.9.0
 # Distributives
 consul:
   v1.6.2:
@@ -43,4 +43,12 @@ consul:
     checksum_algorithm: "sha256"
     checksum: 94ab38e6221d3da393d0bbdf19cc524051253a75db078c31e249dad2c497ad46
     binary_checksum: 71c535c1be8bab8c59efdedd2b3de1c8fe85a3852f5fca1d13990aa4a2942a7f
+    extra_opts: ''
+  v1.9.0:
+    # Прямая ссылка в сети интернет для возможноти скачать архив с consul
+    source_url: https://releases.hashicorp.com/consul/1.9.0/consul_1.9.0_linux_amd64.zip
+    # Контрольная сумма скачаемого архива
+    checksum_algorithm: "sha256"
+    checksum: 409b964f9cec93ba4aa3f767fe3a57e14160d86ffab63c3697d188ba29d247ce
+    binary_checksum: bdb01ffb73d4fa0717439f3f2ae58ac7af7420e6417f06207d12b6f4235d6809
     extra_opts: ''
