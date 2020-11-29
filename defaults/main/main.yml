@@ -47,6 +47,9 @@ consul_group_name: "consul"
 # Sub-directories of the config directory are not loaded.
 # For more information on the format of the configuration files, see the Configuration Files section.
 consul_conf_dir: "/etc/consul.d"
+# Specifies a local directory used to store agent log files.
+# This must be specified as an absolute path.
+consul_logs_dir: "/var/log/consul"
 # This is required for all agents.
 # The directory should be durable across reboots.
 # This is especially critical for agents that are running in server mode as they must be able to persist cluster state.
